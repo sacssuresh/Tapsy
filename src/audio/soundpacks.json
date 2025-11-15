@@ -1,0 +1,27 @@
+{
+  "pastel": {
+    "tile0": "../../assets/sounds/pastel_tile1.wav",
+    "tile1": "../../assets/sounds/pastel_tile2.wav",
+    "tile2": "../../assets/sounds/pastel_tile3.wav",
+    "tile3": "../../assets/sounds/pastel_tile4.wav",
+    "success": "../../assets/sounds/pastel_success.wav",
+    "fail": "../../assets/sounds/pastel_fail.wav"
+  },
+  "bubble": {
+    "tile0": "../../assets/sounds/bubble_tile1.wav",
+    "tile1": "../../assets/sounds/bubble_tile2.wav",
+    "tile2": "../../assets/sounds/bubble_tile3.wav",
+    "tile3": "../../assets/sounds/bubble_tile4.wav",
+    "success": "../../assets/sounds/bubble_success.wav",
+    "fail": "../../assets/sounds/bubble_fail.wav"
+  },
+  "anime": {
+    "tile0": "../../assets/sounds/anime_tile1.wav",
+    "tile1": "../../assets/sounds/anime_tile2.wav",
+    "tile2": "../../assets/sounds/anime_tile3.wav",
+    "tile3": "../../assets/sounds/anime_tile4.wav",
+    "success": "../../assets/sounds/anime_success.wav",
+    "fail": "../../assets/sounds/anime_fail.wav"
+  }
+}
+

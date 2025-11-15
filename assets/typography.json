@@ -1,0 +1,21 @@
+{
+    "title": {
+      "fontSize": 32,
+      "fontWeight": "600",
+      "letterSpacing": -0.5,
+      "color": "#111111"
+    },
+    "subtitle": {
+      "fontSize": 18,
+      "color": "#666666"
+    },
+    "body": {
+      "fontSize": 16,
+      "color": "#111111"
+    },
+    "caption": {
+      "fontSize": 12,
+      "color": "#666666"
+    }
+  }
+  

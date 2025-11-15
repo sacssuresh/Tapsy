@@ -1,0 +1,27 @@
+{
+    "tileTap": {
+      "scale": [1, 0.94, 1],
+      "duration": 120,
+      "easing": "ease-out"
+    },
+    "tileBlink": {
+      "scale": [1, 1.12, 1],
+      "overlayOpacity": [0, 0.7, 0],
+      "duration": 200
+    },
+    "levelUp": {
+      "scale": [1, 1.15, 1],
+      "opacity": [1, 1, 1],
+      "duration": 280
+    },
+    "shake": {
+      "translateX": [-8, 8, -6, 6, -4, 4, 0],
+      "duration": 360
+    },
+    "streakFlame": {
+      "opacity": [0.8, 1, 0.8],
+      "duration": 1500,
+      "loop": true
+    }
+  }
+  

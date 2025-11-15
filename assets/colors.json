@@ -1,0 +1,25 @@
+{
+    "background": "#F7F7F8",
+    "surface": "#FFFFFF",
+    "border": "#E6E6EC",
+  
+    "textPrimary": "#111111",
+    "textSecondary": "#666666",
+  
+    "primary": "#6C63FF",
+    "accentAqua": "#00D8C0",
+  
+    "success": "#4ADE80",
+    "fail": "#FF5151",
+    "warning": "#FBBF24",
+  
+    "tileBlue": "#A7C6FF",
+    "tilePink": "#FFC1E3",
+    "tileMint": "#C4F6E3",
+    "tileYellow": "#FFF2B3",
+  
+    "darkBg": "#0D0D0D",
+    "darkSurface": "#1A1A1A",
+    "darkPrimary": "#7A5CFF"
+  }
+  

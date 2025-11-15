@@ -1,0 +1,23 @@
+{
+    "gradientBackground": {
+      "colors": ["#F7F7F8", "#FFFFFF", "#F0F5FF"],
+      "duration": 8000,
+      "loop": true,
+      "opacity": 0.6
+    },
+    "glassPanel": {
+      "backgroundColor": "rgba(255,255,255,0.45)",
+      "borderRadius": 24,
+      "borderWidth": 1,
+      "borderColor": "rgba(255,255,255,0.55)",
+      "blur": 12,
+      "padding": 20
+    },
+    "confetti": {
+      "particleCount": 20,
+      "colors": ["#6C63FF", "#00D8C0", "#FFC1E3"],
+      "spread": 60,
+      "startVelocity": 35
+    }
+  }
+  
