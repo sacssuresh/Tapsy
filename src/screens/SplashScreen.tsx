@@ -4,6 +4,7 @@ import { useSimpleNavigation } from '../navigation/SimpleNavigator';
 import { useUserStore } from '../state/userStore';
 import { loadSoundPack, isValidSoundPack } from '../audio/loadSoundPack';
 import { colors, typography } from '../theme';
+import { error as logError } from '../utils/logger';
 
 export const SplashScreen: React.FC = () => {
   const { navigate } = useSimpleNavigation();
@@ -27,7 +28,7 @@ export const SplashScreen: React.FC = () => {
           await loadSoundPack('bubble');
         }
       } catch (err) {
-        console.error('Error initializing app:', err);
+        logError('Error initializing app:', err);
         // Try to load default sound pack anyway
         loadSoundPack('bubble').catch(() => {});
       }

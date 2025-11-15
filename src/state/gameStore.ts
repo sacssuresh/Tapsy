@@ -58,6 +58,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const state = get();
     if (state.isPlayingSequence || state.sequence.length === 0) return;
 
+    // Ensure all tiles are reset before starting new sequence
     set({ isPlayingSequence: true, currentTileIndex: -1, playerInput: [] });
 
     const config = getModeConfig(state.mode);
@@ -76,20 +77,48 @@ export const useGameStore = create<GameStore>((set, get) => ({
         return;
       }
 
-      set({ currentTileIndex: sequence[index] });
+      // Set tile to active
+      const tileToActivate = sequence[index];
+      
+      // Ensure we're not already showing this tile (prevent double activation)
+      if (currentState.currentTileIndex !== tileToActivate) {
+        set({ currentTileIndex: tileToActivate });
+      }
       index++;
 
+      // Wait for tile animation to complete, then reset and move to next
       setTimeout(() => {
-        // Reset tile highlight before next one
-        if (index < sequence.length) {
+        // Check if this is the last tile
+        const isLastTile = index >= sequence.length;
+        
+        if (isLastTile) {
+          // For the last tile, wait longer to ensure animation fully completes
+          // Then set isPlayingSequence to false BEFORE resetting tile to prevent re-triggers
+          setTimeout(() => {
+            // Set isPlayingSequence to false first to prevent any re-triggers
+            set({ isPlayingSequence: false });
+            // Then reset tile after a brief moment
+            setTimeout(() => {
+              set({ currentTileIndex: -1 });
+              onComplete();
+            }, 50);
+          }, 250); // Wait 250ms for last tile animation to complete
+        } else {
+          // Not the last tile - reset and move to next
           set({ currentTileIndex: -1 });
+          
+          // Pause between tiles to ensure clean state transition
+          // Add extra delay if next tile is the same to prevent double blink
+          const nextTile = sequence[index];
+          const extraDelay = nextTile === tileToActivate ? 200 : 0; // Extra 200ms if same tile
+          setTimeout(playNext, 200 + extraDelay); // Base 200ms pause + extra if same tile
         }
-        setTimeout(playNext, 100); // Brief pause between tiles
       }, config.playbackSpeed);
     };
 
-    // Start after initial delay
-    setTimeout(playNext, 200);
+    // Add 150ms delay before first tile activation to ensure tiles are fully reset
+    // This prevents double blink on first tile of new sequence (especially level 2+)
+    setTimeout(playNext, 150);
   },
 
   handleTileTap: (tileIndex: TileIndex, onMismatch: () => void, onLevelComplete: () => void) => {
@@ -141,11 +170,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
         
         const newLevel = state.level + 1;
         const newSequence = extendSequence(state.sequence);
+        
+        // Reset all game state including currentTileIndex to ensure clean transition
         set({
           level: newLevel,
           sequence: newSequence,
           playerInput: [],
           score: state.score + scoreIncrement,
+          isPlayingSequence: false,
+          currentTileIndex: -1, // Ensure tile is reset
+          isPaused: false,
         });
         onLevelComplete();
       }

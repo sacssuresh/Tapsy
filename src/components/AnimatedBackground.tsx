@@ -6,7 +6,7 @@ import { Animated, StyleSheet, View } from 'react-native';
  * Colors: #EFEAFE → #F7F7FF → #EAF4FF
  * Slow 12-15s animation with 40% opacity
  */
-export const AnimatedBackground: React.FC = () => {
+export const AnimatedBackground: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export const AnimatedBackground: React.FC = () => {
   });
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    <View style={StyleSheet.absoluteFill}>
       <Animated.View
         style={[
           StyleSheet.absoluteFill,
@@ -56,6 +56,7 @@ export const AnimatedBackground: React.FC = () => {
             opacity: opacity1,
           },
         ]}
+        pointerEvents="none"
       />
       <Animated.View
         style={[
@@ -65,6 +66,7 @@ export const AnimatedBackground: React.FC = () => {
             opacity: opacity2,
           },
         ]}
+        pointerEvents="none"
       />
       <Animated.View
         style={[
@@ -74,7 +76,9 @@ export const AnimatedBackground: React.FC = () => {
             opacity: opacity3,
           },
         ]}
+        pointerEvents="none"
       />
+      {children}
     </View>
   );
 };

@@ -9,6 +9,8 @@ import { SecondaryButton } from '../components/SecondaryButton';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import { DynamicMessage } from '../components/DynamicMessage';
 import { Sparkle } from '../components/Sparkle';
+import { AnimatedMascot } from '../components/AnimatedMascot';
+import { getUserMascot, type MascotName } from '../mascots/MascotManager';
 import { colors, typography, spacing, animations } from '../theme';
 import { soundManager } from '../audio/SoundManager';
 import type { GameMode, TileIndex } from '../types';
@@ -48,6 +50,7 @@ export const GameScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> 
   const sparkleIdRef = useRef(0);
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const levelUpAnim = useRef(new Animated.Value(1)).current;
+  const [selectedMascot, setSelectedMascot] = useState<MascotName>('tapsy-kid');
 
   // Initialize game on mount
   useEffect(() => {
@@ -55,19 +58,36 @@ export const GameScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> 
     setSequencePlayed(false);
   }, [mode, startGame]);
 
+  // Load user's selected mascot on mount
+  useEffect(() => {
+    const loadMascot = async () => {
+      const userMascot = await getUserMascot();
+      setSelectedMascot(userMascot);
+    };
+    loadMascot();
+  }, []);
+
   // Play sequence when level changes or game starts
   useEffect(() => {
     if (Boolean(!sequencePlayed) && Boolean(!isPaused) && Boolean(!isGameOver)) {
       setStatus('watching');
       setSequencePlayed(true);
       
+      // Delay to ensure all tile states are fully reset from previous sequence
+      // This prevents double blink on first tile of new sequence
+      // For level 1, use 1 second delay to let user understand the screen first
+      const delay = 1000; // 1 second delay for all levels
+      
       setTimeout(() => {
-        playSequence(() => {
-          setStatus('playing');
-        });
-      }, 500);
+        // Double-check state is clean before starting
+        if (!isPlayingSequence && !isGameOver && !isPaused) {
+          playSequence(() => {
+            setStatus('playing');
+          });
+        }
+      }, delay);
     }
-  }, [level, sequencePlayed, isPaused, isGameOver, playSequence]);
+  }, [level, sequencePlayed, isPaused, isGameOver, isPlayingSequence, playSequence]);
 
   // Track previous pause state to detect resume
   const prevIsPaused = useRef(isPaused);
@@ -119,7 +139,7 @@ export const GameScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> 
 
   const onTilePressWithPosition = useCallback(
     (tileIndex: TileIndex, x: number, y: number) => {
-      if (Boolean(isPlayingSequence) || Boolean(isPaused)) return;
+      if (Boolean(isPlayingSequence) || Boolean(isPaused) || Boolean(isGameOver)) return;
 
       // Add sparkle animation
       const id = sparkleIdRef.current++;
@@ -155,26 +175,31 @@ export const GameScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> 
           }
         },
         () => {
-          // onLevelComplete - levelUp animation
-          levelUpAnim.setValue(1);
-          Animated.sequence([
-            Animated.timing(levelUpAnim, {
-              toValue: animations.levelUp.scale[1],
-              duration: animations.levelUp.duration / 2,
-              useNativeDriver: true,
-            }),
-            Animated.timing(levelUpAnim, {
-              toValue: animations.levelUp.scale[2],
-              duration: animations.levelUp.duration / 2,
-              useNativeDriver: true,
-            }),
-          ]).start();
-          
-          setStatus('levelComplete');
-          setSequencePlayed(false);
+          // onLevelComplete - delay celebration by 1 second so user can process level completion
           setTimeout(() => {
-            setStatus('watching');
-          }, 1500);
+            // levelUp animation
+            levelUpAnim.setValue(1);
+            Animated.sequence([
+              Animated.timing(levelUpAnim, {
+                toValue: animations.levelUp.scale[1],
+                duration: animations.levelUp.duration / 2,
+                useNativeDriver: true,
+              }),
+              Animated.timing(levelUpAnim, {
+                toValue: animations.levelUp.scale[2],
+                duration: animations.levelUp.duration / 2,
+                useNativeDriver: true,
+              }),
+            ]).start();
+            
+            setStatus('levelComplete');
+            
+            // After showing level complete message, prepare for next sequence
+            setTimeout(() => {
+              setStatus('watching');
+              setSequencePlayed(false); // This will trigger the useEffect to play new sequence
+            }, 1500);
+          }, 1000); // 1 second delay before showing level complete animation
         }
       );
 
@@ -183,7 +208,7 @@ export const GameScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> 
         soundManager.playTileSound(tileIndex);
       }
     },
-    [isPlayingSequence, isPaused, handleTileTap, safeSettings.soundEnabled, shakeAnim, levelUpAnim]
+    [isPlayingSequence, isPaused, isGameOver, handleTileTap, safeSettings.soundEnabled, shakeAnim, levelUpAnim]
   );
 
   const onTilePress = useCallback(
@@ -213,7 +238,7 @@ export const GameScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> 
 
   // Calculate hint tile index when hints are enabled
   const getHintTileIndex = (): number | null => {
-    if (!safeSettings.hintsEnabled || Boolean(isPlayingSequence) || Boolean(isPaused) || status !== 'playing') {
+    if (!safeSettings.hintsEnabled || Boolean(isPlayingSequence) || Boolean(isPaused) || Boolean(isGameOver) || status !== 'playing') {
       return null;
     }
 
@@ -244,13 +269,16 @@ export const GameScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> 
         ]}
       >
         <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
-          <TouchableOpacity onPress={goBack} disabled={false}>
-            <Text style={styles.backButton}>← Back</Text>
+          <TouchableOpacity onPress={goBack} disabled={false} style={styles.backButton}>
+            <Text style={styles.backButtonIcon}>←</Text>
           </TouchableOpacity>
           <View style={styles.headerInfo}>
             <Text style={styles.modeText}>{modeName}</Text>
             <Text style={styles.levelText}>Level {level}</Text>
             <Text style={styles.scoreText}>Score: {score}</Text>
+          </View>
+          <View style={styles.mascotContainer}>
+            <AnimatedMascot name={selectedMascot} size={60} />
           </View>
         </View>
 
@@ -263,10 +291,19 @@ export const GameScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> 
           ]}
         >
           <GameGrid
-            activeTileIndex={Boolean(isPlayingSequence) && typeof currentTileIndex === 'number' && currentTileIndex >= 0 ? currentTileIndex : null}
+            key={`level-${level}`} // Force remount on level change to reset all tile states
+            activeTileIndex={
+              Boolean(isPlayingSequence) && 
+              typeof currentTileIndex === 'number' && 
+              currentTileIndex >= 0 && 
+              currentTileIndex <= 3 && 
+              status !== 'levelComplete' // Don't show active tiles during level complete
+                ? currentTileIndex 
+                : null
+            }
             onTilePress={onTilePress}
             onTilePressWithPosition={onTilePressWithPosition}
-            disabled={Boolean(Boolean(isPlayingSequence) || Boolean(isPaused))}
+            disabled={Boolean(Boolean(isPlayingSequence) || Boolean(isPaused) || Boolean(isGameOver) || status === 'levelComplete')}
             hintTileIndex={hintTileIndex}
             playSound={(tileIndex) => {
               if (safeSettings.soundEnabled) {
@@ -314,12 +351,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButton: {
-    fontSize: typography.body.fontSize,
-    color: colors.primary,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(108, 99, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: spacing.md,
+  },
+  backButtonIcon: {
+    fontSize: 24,
+    color: colors.primary,
+    fontWeight: '600',
   },
   headerInfo: {
     flex: 1,
+  },
+  mascotContainer: {
+    marginLeft: spacing.sm,
   },
   modeText: {
     fontSize: typography.body.fontSize + 2,

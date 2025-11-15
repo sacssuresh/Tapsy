@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSimpleNavigation } from '../navigation/SimpleNavigator';
 import { Card } from '../components/Card';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { GradientBackground } from '../components/GradientBackground';
+import { AnimatedBackground } from '../components/AnimatedBackground';
 import { colors, typography, spacing } from '../theme';
 import { useUserStore } from '../state/userStore';
 
@@ -29,14 +29,14 @@ export const ShopScreen: React.FC = () => {
   };
 
   return (
-    <GradientBackground>
+    <AnimatedBackground>
       <ScrollView 
         style={styles.container} 
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.lg }]}
       >
         <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
         <TouchableOpacity onPress={goBack} disabled={false} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
+          <Text style={styles.backButtonIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Shop</Text>
       </View>
@@ -97,7 +97,7 @@ export const ShopScreen: React.FC = () => {
         </Card>
       </View>
       </ScrollView>
-    </GradientBackground>
+    </AnimatedBackground>
   );
 };
 
@@ -116,11 +116,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(108, 99, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: spacing.md,
   },
-  backButtonText: {
-    fontSize: typography.body.fontSize,
+  backButtonIcon: {
+    fontSize: 24,
     color: colors.primary,
+    fontWeight: '600',
   },
   title: {
     fontSize: typography.title.fontSize,

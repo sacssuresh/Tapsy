@@ -80,18 +80,32 @@ export const useUserStore = create<UserStore>((set, get) => ({
         selectedSoundPack: data.selectedSoundPack || 'bubble',
         hasPremium: Boolean(data.hasPremium === true || data.hasPremium === 'true'),
         settings: {
-          soundEnabled: Boolean(data.settings?.soundEnabled === true || data.settings?.soundEnabled === 'true' || defaultData.settings.soundEnabled),
-          hapticsEnabled: Boolean(data.settings?.hapticsEnabled === true || data.settings?.hapticsEnabled === 'true' || defaultData.settings.hapticsEnabled),
-          hintsEnabled: Boolean(data.settings?.hintsEnabled === true || data.settings?.hintsEnabled === 'true' || defaultData.settings.hintsEnabled),
+          soundEnabled: data.settings?.soundEnabled !== undefined 
+            ? Boolean(data.settings.soundEnabled === true || data.settings.soundEnabled === 'true')
+            : defaultData.settings.soundEnabled,
+          hapticsEnabled: data.settings?.hapticsEnabled !== undefined
+            ? Boolean(data.settings.hapticsEnabled === true || data.settings.hapticsEnabled === 'true')
+            : defaultData.settings.hapticsEnabled,
+          hintsEnabled: data.settings?.hintsEnabled !== undefined
+            ? Boolean(data.settings.hintsEnabled === true || data.settings.hintsEnabled === 'true')
+            : defaultData.settings.hintsEnabled,
         },
         isLoaded: true,
       };
       set(mergedData);
+      
+      // Sync sound manager enabled state with loaded settings
+      const { soundManager } = await import('../audio/SoundManager');
+      soundManager.setEnabled(mergedData.settings.soundEnabled);
     } else {
       set({ 
         ...defaultData, 
         isLoaded: true 
       });
+      
+      // Sync sound manager enabled state with default settings
+      const { soundManager } = await import('../audio/SoundManager');
+      soundManager.setEnabled(defaultData.settings.soundEnabled);
     }
   },
 
@@ -175,6 +189,12 @@ export const useUserStore = create<UserStore>((set, get) => ({
       settings: { ...state.settings, ...newSettings },
     }));
     get().saveToStorage();
+    
+    // Sync sound manager enabled state if soundEnabled changed
+    if (newSettings.soundEnabled !== undefined) {
+      const { soundManager } = require('../audio/SoundManager');
+      soundManager.setEnabled(newSettings.soundEnabled);
+    }
   },
 
   updateSelectedSoundPack: async (packName: string) => {
@@ -185,6 +205,13 @@ export const useUserStore = create<UserStore>((set, get) => ({
     const { loadSoundPack, isValidSoundPack } = await import('../audio/loadSoundPack');
     if (isValidSoundPack(packName)) {
       await loadSoundPack(packName as any);
+      
+      // Ensure sound manager is enabled if sound is enabled in settings
+      const state = get();
+      if (state.settings?.soundEnabled) {
+        const { soundManager } = await import('../audio/SoundManager');
+        soundManager.setEnabled(true);
+      }
     }
   },
 

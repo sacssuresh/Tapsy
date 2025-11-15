@@ -5,6 +5,8 @@ import { useSimpleNavigation } from '../navigation/SimpleNavigator';
 import { useUserStore } from '../state/userStore';
 import { Card } from '../components/Card';
 import { AnimatedBackground } from '../components/AnimatedBackground';
+import { AnimatedMascot } from '../components/AnimatedMascot';
+import { getMascotNameForMode } from '../mascots/MascotManager';
 import { colors, typography, spacing } from '../theme';
 import type { GameMode } from '../types';
 
@@ -61,7 +63,7 @@ export const ModeSelectScreen: React.FC = () => {
       <AnimatedBackground />
       <View style={[styles.header, { paddingTop: insets.top + spacing.md, zIndex: 1 }]}>
         <TouchableOpacity onPress={goBack} disabled={false} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
+          <Text style={styles.backButtonIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Select Mode</Text>
       </View>
@@ -117,21 +119,28 @@ const ModeCard: React.FC<{
     >
       <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
         <Card style={[styles.modeCard, { borderColor: modeConfig.borderColor, borderWidth: 2 }]}>
-          <View style={styles.modeHeader}>
-            <View style={styles.modeTitleRow}>
-              <View style={[styles.iconBadge, { backgroundColor: `${modeConfig.borderColor}20` }]}>
-                <Text style={styles.modeIcon}>{modeConfig.icon}</Text>
-              </View>
-              <Text style={styles.modeName}>{modeConfig.name}</Text>
+          <View style={styles.modeContent}>
+            <View style={styles.mascotContainer}>
+              <AnimatedMascot name={getMascotNameForMode(modeConfig.mode)} size={50} />
             </View>
-            <View style={styles.modeRight}>
-              <Text style={styles.bestScore}>
-                Best: {bestScore}
-              </Text>
-              <Text style={styles.chevron}>›</Text>
+            <View style={styles.modeInfo}>
+              <View style={styles.modeHeader}>
+                <View style={styles.modeTitleRow}>
+                  <View style={[styles.iconBadge, { backgroundColor: `${modeConfig.borderColor}20` }]}>
+                    <Text style={styles.modeIcon}>{modeConfig.icon}</Text>
+                  </View>
+                  <Text style={styles.modeName}>{modeConfig.name}</Text>
+                </View>
+                <View style={styles.modeRight}>
+                  <Text style={styles.bestScore}>
+                    Best: {bestScore}
+                  </Text>
+                  <Text style={styles.chevron}>›</Text>
+                </View>
+              </View>
+              <Text style={styles.modeDescription}>{modeConfig.description}</Text>
             </View>
           </View>
-          <Text style={styles.modeDescription}>{modeConfig.description}</Text>
         </Card>
       </Animated.View>
     </TouchableOpacity>
@@ -150,11 +159,18 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
   },
   backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(108, 99, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: spacing.md,
   },
-  backButtonText: {
-    fontSize: typography.body.fontSize,
+  backButtonIcon: {
+    fontSize: 24,
     color: colors.primary,
+    fontWeight: '600',
   },
   title: {
     fontSize: typography.title.fontSize,
@@ -173,6 +189,16 @@ const styles = StyleSheet.create({
   modeCard: {
     marginBottom: spacing.md,
     borderRadius: 28, // Increased corner radius
+  },
+  modeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mascotContainer: {
+    marginRight: spacing.md,
+  },
+  modeInfo: {
+    flex: 1,
   },
   modeHeader: {
     flexDirection: 'row',

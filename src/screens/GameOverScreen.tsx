@@ -7,7 +7,7 @@ import { useUserStore } from '../state/userStore';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { SecondaryButton } from '../components/SecondaryButton';
 import { Card } from '../components/Card';
-import { GradientBackground } from '../components/GradientBackground';
+import { AnimatedBackground } from '../components/AnimatedBackground';
 import { Mascot } from '../components/Mascot';
 import { Confetti } from '../components/Confetti';
 import { colors, typography, spacing } from '../theme';
@@ -85,7 +85,7 @@ export const GameOverScreen: React.FC<{ route?: { params?: { mode?: GameMode } }
   const mascotExpression = isNewBest ? 'celebrate' : 'sad';
 
   return (
-    <GradientBackground>
+    <AnimatedBackground>
       {showConfetti && <Confetti />}
       <ScrollView 
         style={styles.container} 
@@ -122,7 +122,7 @@ export const GameOverScreen: React.FC<{ route?: { params?: { mode?: GameMode } }
         )}
       </View>
       </ScrollView>
-    </GradientBackground>
+    </AnimatedBackground>
   );
 };
 

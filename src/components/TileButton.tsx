@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { TouchableOpacity, Animated, StyleSheet, Easing, View, Text } from 'react-native';
+import { TouchableOpacity, Animated, StyleSheet, Easing, View, Text, type GestureResponderEvent } from 'react-native';
 import { tiles, animations, spacing, colors } from '../theme';
 import type { TileIndex } from '../types';
 
@@ -29,21 +29,79 @@ export const TileButton: React.FC<TileButtonProps> = ({
   const tapScaleAnim = useRef(new Animated.Value(1)).current;
   const glowOpacityAnim = useRef(new Animated.Value(0)).current;
   const hintPulseAnim = useRef(new Animated.Value(0.3)).current;
+  const isAnimatingRef = useRef(false);
+  const lastActiveRef = useRef(false);
+  const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastAnimationTimeRef = useRef<number>(0);
+  const animationIdRef = useRef<number>(0); // Unique ID for each animation attempt
+  const lastTileIndexRef = useRef<number | null>(null); // Track which tile index was last animated
+  const lastInactiveTimeRef = useRef<number>(0); // Track when tile became inactive
 
   // Enhanced blink animation when tile is active (sequence playback)
   useEffect(() => {
-    if (isActive) {
-      playSound?.();
+    // Immediate guard: if already animating, return immediately
+    if (isAnimatingRef.current) {
+      return;
+    }
+
+    // Clear any pending animation timeout
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current);
+      animationTimeoutRef.current = null;
+    }
+
+    const now = Date.now();
+    const timeSinceLastAnimation = now - lastAnimationTimeRef.current;
+    const timeSinceInactive = now - lastInactiveTimeRef.current;
+    const MIN_ANIMATION_INTERVAL = 250; // Minimum 250ms between animations
+    const NEW_SEQUENCE_THRESHOLD = 500; // If inactive for >500ms, treat as new sequence
+
+    // Detect new sequence start: if tile becomes active after being inactive for >500ms
+    // This ensures clean state reset between sequences
+    if (isActive && !lastActiveRef.current && timeSinceInactive > NEW_SEQUENCE_THRESHOLD) {
+      // Fully reset all animation refs for new sequence
+      lastActiveRef.current = false;
+      lastTileIndexRef.current = null;
+      lastAnimationTimeRef.current = 0;
+      isAnimatingRef.current = false;
+    }
+
+    // Only trigger animation on transition from inactive to active
+    // AND if enough time has passed since last animation
+    // AND we're not already animating
+    // AND this is a different tile index than the last one animated (prevents same-tile double blink)
+    const isNewTileActivation = lastTileIndexRef.current !== tileIndex;
+    
+    if (isActive && !lastActiveRef.current && !isAnimatingRef.current && 
+        timeSinceLastAnimation >= MIN_ANIMATION_INTERVAL && isNewTileActivation) {
+      // Set animating flag synchronously at the very start - BEFORE any other code
+      isAnimatingRef.current = true;
+      
+      // Generate unique animation ID for this activation
+      const currentAnimationId = ++animationIdRef.current;
+      
+      // Mark state immediately to prevent duplicate triggers
+      lastActiveRef.current = true;
+      lastTileIndexRef.current = tileIndex; // Track which tile is animating
+      lastAnimationTimeRef.current = now;
+      
+      // Stop any running animations before resetting values to prevent visual jumps
+      scaleAnim.stopAnimation();
+      overlayOpacityAnim.stopAnimation();
+      glowOpacityAnim.stopAnimation();
       
       // Reset animations to initial state
       scaleAnim.setValue(1);
       overlayOpacityAnim.setValue(0);
       glowOpacityAnim.setValue(0);
       
+      // Play sound immediately
+      playSound?.();
+      
+      // Start animation immediately (no debounce delay)
       // Tile blink animation from theme - enhanced with glow
       const blinkScale = animations.tileBlink.scale;
       const blinkDuration = animations.tileBlink.duration;
-      const overlayOpacity = animations.tileBlink.overlayOpacity;
       
       Animated.sequence([
         Animated.parallel([
@@ -80,8 +138,50 @@ export const TileButton: React.FC<TileButtonProps> = ({
             useNativeDriver: true,
           }),
         ]),
-      ]).start();
+      ]).start(() => {
+        // Animation complete - only reset if this is still the current animation
+        if (currentAnimationId === animationIdRef.current) {
+          isAnimatingRef.current = false;
+        }
+      });
+    } else if (!isActive) {
+      // Track when tile becomes inactive for new sequence detection
+      if (lastActiveRef.current) {
+        lastInactiveTimeRef.current = now;
+      }
+      
+      // Reset when tile becomes inactive - with a delay to ensure clean state
+      // Only reset if we're not currently animating (to avoid interrupting animations)
+      animationTimeoutRef.current = setTimeout(() => {
+        // Only reset if we're still inactive (might have become active again)
+        // Also check if animation is complete before resetting
+        if (!isActive && !isAnimatingRef.current) {
+          lastActiveRef.current = false;
+          // Reset tile index tracking when tile becomes fully inactive
+          // This allows the same tile to animate again in a new sequence
+          if (lastTileIndexRef.current === tileIndex) {
+            lastTileIndexRef.current = null;
+          }
+        } else if (!isActive) {
+          // Still animating, wait a bit more
+          setTimeout(() => {
+            if (!isActive) {
+              lastActiveRef.current = false;
+              if (lastTileIndexRef.current === tileIndex) {
+                lastTileIndexRef.current = null;
+              }
+            }
+          }, 150);
+        }
+      }, 200); // Increased delay to 200ms to ensure animation completes
     }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
+    };
   }, [isActive, scaleAnim, overlayOpacityAnim, glowOpacityAnim, playSound]);
 
   // Hint pulse animation
@@ -110,7 +210,7 @@ export const TileButton: React.FC<TileButtonProps> = ({
   }, [showHint, hintPulseAnim]);
 
   // Enhanced tap animation when user presses tile (squishy effect)
-  const handlePress = (event: any) => {
+  const handlePress = (event: GestureResponderEvent) => {
     const tapScale = animations.tileTap.scale;
     const tapDuration = animations.tileTap.duration;
     

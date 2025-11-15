@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { PersistedData } from '../types';
+import { error as logError } from './logger';
 
 const STORAGE_KEY = '@Tapsy:userData';
 
@@ -13,8 +14,8 @@ export const loadPersistedData = async (): Promise<PersistedData | null> => {
       return JSON.parse(data) as PersistedData;
     }
     return null;
-  } catch (error) {
-    console.error('Error loading persisted data:', error);
+  } catch (err) {
+    logError('Error loading persisted data:', err);
     return null;
   }
 };
@@ -25,8 +26,8 @@ export const loadPersistedData = async (): Promise<PersistedData | null> => {
 export const savePersistedData = async (data: PersistedData): Promise<void> => {
   try {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch (error) {
-    console.error('Error saving persisted data:', error);
+  } catch (err) {
+    logError('Error saving persisted data:', err);
   }
 };
 
@@ -36,8 +37,8 @@ export const savePersistedData = async (data: PersistedData): Promise<void> => {
 export const clearPersistedData = async (): Promise<void> => {
   try {
     await AsyncStorage.removeItem(STORAGE_KEY);
-  } catch (error) {
-    console.error('Error clearing persisted data:', error);
+  } catch (err) {
+    logError('Error clearing persisted data:', err);
   }
 };
 

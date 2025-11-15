@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSimpleNavigation } from '../navigation/SimpleNavigator';
 import { useUserStore } from '../state/userStore';
@@ -8,36 +8,80 @@ import { SecondaryButton } from '../components/SecondaryButton';
 import { StatsCard } from '../components/StatsCard';
 import { AdBanner } from '../components/AdBanner';
 import { AnimatedBackground } from '../components/AnimatedBackground';
-import { Mascot } from '../components/Mascot';
+import { AnimatedMascot } from '../components/AnimatedMascot';
+import { getUserMascot, type MascotName } from '../mascots/MascotManager';
 import { colors, typography, spacing } from '../theme';
+const taglines = [
+  'Big brain mode: ON.',
+  'Train your brain with Tapsy & friends!',
+  'Tap fast, think faster.',
+  'Your mascot is cheering for you!',
+  "Let's see that memory magic!",
+];
 
 export const HomeScreen: React.FC = () => {
-  const { navigate } = useSimpleNavigation();
+  const { navigate, currentScreen } = useSimpleNavigation();
   const insets = useSafeAreaInsets();
   const userStore = useUserStore();
   const { loadFromStorage } = useUserStore();
+  const [selectedMascot, setSelectedMascot] = useState<MascotName>('tapsy-kid');
+  const [tagline] = useState(() => taglines[Math.floor(Math.random() * taglines.length)]);
+  const taglineOpacity = useRef(new Animated.Value(0)).current;
   
-  // Load storage and sound pack in background on mount
+  // Load storage, sound pack, and home mascot in background on mount
   useEffect(() => {
+    let isMounted = true;
+    
     const initialize = async () => {
       try {
         await loadFromStorage();
+        
+        if (!isMounted) return;
+        
+        // Load user's selected mascot
+        const userMascot = await getUserMascot();
+        if (isMounted) {
+          setSelectedMascot(userMascot);
+        }
         
         // Load sound pack if not already loaded
         const packName = userStore.selectedSoundPack || 'bubble';
         const { soundManager } = await import('../audio/SoundManager');
         const { loadSoundPack, isValidSoundPack } = await import('../audio/loadSoundPack');
         
-        if (!soundManager.isPackLoaded(packName as any) && isValidSoundPack(packName)) {
+        // Check if pack is already loaded before attempting to load
+        if (isValidSoundPack(packName) && !soundManager.isPackLoaded(packName as any)) {
           await loadSoundPack(packName as any);
         }
+        
+        if (!isMounted) return;
+        
+        // Ensure sound manager is enabled based on settings
+        const currentSettings = userStore.settings;
+        if (currentSettings?.soundEnabled !== undefined) {
+          soundManager.setEnabled(currentSettings.soundEnabled);
+        }
       } catch (err) {
-        console.error('Error loading storage:', err);
+        const { error: logError } = await import('../utils/logger');
+        logError('Error loading storage:', err);
       }
     };
     
     initialize();
-  }, [loadFromStorage, userStore.selectedSoundPack]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [loadFromStorage]);
+
+  // Fade-in animation for tagline
+  useEffect(() => {
+    Animated.timing(taglineOpacity, {
+      toValue: 1,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
+  }, [taglineOpacity]);
   
   const bestScoreByMode = userStore.bestScoreByMode || { classic: 0, speed: 0, reverse: 0, zen: 0 };
   const xp = Number(userStore.xp) || 0;
@@ -59,9 +103,11 @@ export const HomeScreen: React.FC = () => {
     <View style={styles.container}>
       <AnimatedBackground />
       <View style={styles.content}>
-        <Mascot expression="happy" />
+        <AnimatedMascot name={selectedMascot} size={130} />
         <Text style={styles.title}>Tapsy</Text>
-        <Text style={styles.subtitle}>Minimal memory challenge.</Text>
+        <Animated.Text style={[styles.subtitle, { opacity: taglineOpacity }]}>
+          {tagline}
+        </Animated.Text>
 
         <View style={styles.buttonContainer}>
           <PrimaryButton title="Play Classic" onPress={navigateToClassic} useGradient={true} />
@@ -81,11 +127,27 @@ export const HomeScreen: React.FC = () => {
       <View style={[styles.bottomSection, { paddingBottom: insets.bottom + spacing.md, zIndex: 1 }]}>
         <View style={styles.bottomNav}>
           <TouchableOpacity style={styles.navItem} onPress={() => {}} disabled={false}>
-            <Text style={styles.navText}>Home</Text>
+            <Text
+              style={[
+                styles.navText,
+                currentScreen === 'Home' ? styles.navTextActive : styles.navTextInactive,
+              ]}
+            >
+              Home
+            </Text>
+            {currentScreen === 'Home' && <View style={styles.activeIndicator} />}
           </TouchableOpacity>
           {/* Shop hidden per user request */}
           <TouchableOpacity style={styles.navItem} onPress={navigateToSettings} disabled={false}>
-            <Text style={styles.navText}>Settings</Text>
+            <Text
+              style={[
+                styles.navText,
+                currentScreen === 'Settings' ? styles.navTextActive : styles.navTextInactive,
+              ]}
+            >
+              Settings
+            </Text>
+            {currentScreen === 'Settings' && <View style={styles.activeIndicator} />}
           </TouchableOpacity>
         </View>
         {/* Ad banner - hidden in Zen mode, shown on Home */}
@@ -143,11 +205,34 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   navItem: {
-    padding: spacing.sm,
+    paddingVertical: spacing.sm + 5,
+    paddingHorizontal: spacing.sm,
+    position: 'relative',
+    alignItems: 'center',
   },
   navText: {
-    ...typography.body,
-    color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+    fontFamily: Platform.select({
+      ios: 'SF Pro Rounded',
+      android: 'Poppins',
+      default: undefined,
+    }),
+  },
+  navTextActive: {
+    color: '#7A57FD',
+  },
+  navTextInactive: {
+    color: '#6E6E8F',
+  },
+  activeIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    width: 32,
+    height: 4,
+    backgroundColor: '#7A57FD',
+    borderRadius: 2,
   },
 });
 

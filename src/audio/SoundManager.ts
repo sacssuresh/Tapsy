@@ -1,5 +1,6 @@
 import { Audio } from 'expo-av';
 import type { TileIndex } from '../types';
+import { warn as logWarn, error as logError } from '../utils/logger';
 
 /**
  * Sound pack configuration type
@@ -13,7 +14,8 @@ export type SoundName = 'tile0' | 'tile1' | 'tile2' | 'tile3' | 'success' | 'fai
 
 /**
  * Multi-pack sound manager using Expo AV
- * Handles loading and playing sounds from different sound packs
+ * Note: expo-av is deprecated but still works in SDK 54
+ * TODO: Migrate to expo-audio when stable API is available
  */
 class SoundManager {
   private sounds: Map<SoundName, Audio.Sound> = new Map();
@@ -28,19 +30,32 @@ class SoundManager {
    * Unloads previous pack if one is loaded
    */
   async loadPack(packName: SoundPackName, soundPackConfig: Record<string, string>): Promise<void> {
-    if (this.isLoading) {
-      console.warn('Sound pack load already in progress');
+    // Skip if same pack is already loaded
+    if (this.currentPack === packName && this.sounds.size > 0) {
       return;
+    }
+
+    if (this.isLoading) {
+      // Wait for current load to complete, then check if we still need to load
+      return new Promise<void>((resolve) => {
+        const checkInterval = setInterval(() => {
+          if (!this.isLoading) {
+            clearInterval(checkInterval);
+            // Check again if pack is loaded
+            if (this.currentPack === packName && this.sounds.size > 0) {
+              resolve();
+            } else {
+              // Load the requested pack
+              this.loadPack(packName, soundPackConfig).then(resolve);
+            }
+          }
+        }, 100);
+      });
     }
 
     // Unload previous pack if loaded
     if (this.currentPack && this.currentPack !== packName) {
       await this.unloadSounds();
-    }
-
-    // Skip if same pack is already loaded
-    if (this.currentPack === packName && this.sounds.size > 0) {
-      return;
     }
 
     this.isLoading = true;
@@ -73,19 +88,19 @@ class SoundManager {
                 });
                 instances.push(instance);
               } catch (err) {
-                console.warn(`Could not create instance ${i} for ${soundName}:`, err);
+                logWarn(`Could not create instance ${i} for ${soundName}:`, err);
               }
             }
             this.soundInstances.set(soundName, instances);
           } else {
-            console.warn(`Sound module not found: ${packName}_${soundName}`);
+            logWarn(`Sound module not found: ${packName}_${soundName}`);
           }
-        } catch (error) {
-          console.warn(`Could not load sound ${soundName} from pack ${packName}:`, error);
+        } catch (err) {
+          logWarn(`Could not load sound ${soundName} from pack ${packName}:`, err);
         }
       }
-    } catch (error) {
-      console.error(`Error loading sound pack ${packName}:`, error);
+    } catch (err) {
+      logError(`Error loading sound pack ${packName}:`, err);
     } finally {
       this.isLoading = false;
     }
@@ -94,12 +109,13 @@ class SoundManager {
   /**
    * Gets the sound module using require() based on pack name and sound name
    * React Native doesn't support dynamic requires, so we use a mapping function
+   * Returns a number (asset ID) from require() or null if not found
    */
-  private getSoundModule(packName: SoundPackName, soundName: string): any {
+  private getSoundModule(packName: SoundPackName, soundName: string): number | null {
     try {
       // Map pack name + sound name to require() calls
       // Extract the actual filename from soundName (e.g., "tile0" -> "tile1")
-      const soundFileMap: Record<string, any> = {
+      const soundFileMap: Record<string, number> = {
         // Pastel pack - files are in assets/sounds/pastel/
         'pastel_tile0': require('../../assets/sounds/pastel/pastel_tile1.wav'),
         'pastel_tile1': require('../../assets/sounds/pastel/pastel_tile2.wav'),
@@ -126,7 +142,7 @@ class SoundManager {
       const key = `${packName}_${soundName}`;
       return soundFileMap[key] || null;
     } catch (error) {
-      console.warn(`Sound file not found: ${packName}_${soundName}`, error);
+      logWarn(`Sound file not found: ${packName}_${soundName}`, error);
       return null;
     }
   }
@@ -226,7 +242,7 @@ class SoundManager {
           .catch(() => {
             // Last resort: just try to play
             sound.playAsync().catch((err) => {
-              console.error(`Error playing sound ${soundName}:`, err);
+              logError(`Error playing sound ${soundName}:`, err);
             });
           });
       });
@@ -271,8 +287,8 @@ class SoundManager {
     for (const instances of this.soundInstances.values()) {
       for (const instance of instances) {
         unloadPromises.push(
-          instance.unloadAsync().catch((error) => {
-            console.warn('Error unloading sound instance:', error);
+          instance.unloadAsync().catch((err) => {
+            logWarn('Error unloading sound instance:', err);
           })
         );
       }

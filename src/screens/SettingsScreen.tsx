@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSimpleNavigation } from '../navigation/SimpleNavigator';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Card } from '../components/Card';
-import { GradientBackground } from '../components/GradientBackground';
+import { AnimatedBackground } from '../components/AnimatedBackground';
 import { colors, typography, spacing } from '../theme';
 import { useUserStore } from '../state/userStore';
 import { soundManager } from '../audio/SoundManager';
@@ -12,7 +12,7 @@ import { loadSoundPack, getAvailableSoundPacks, isValidSoundPack } from '../audi
 import type { SoundPackName } from '../audio/SoundManager';
 
 export const SettingsScreen: React.FC = () => {
-  const { goBack } = useSimpleNavigation();
+  const { goBack, navigate } = useSimpleNavigation();
   const insets = useSafeAreaInsets();
   const { settings, updateSettings, resetProgress, selectedSoundPack, updateSelectedSoundPack } = useUserStore();
   
@@ -61,14 +61,14 @@ export const SettingsScreen: React.FC = () => {
   };
 
   return (
-    <GradientBackground>
+    <AnimatedBackground>
       <ScrollView 
         style={styles.container} 
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.lg }]}
       >
         <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
         <TouchableOpacity onPress={goBack} disabled={false} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
+          <Text style={styles.backButtonIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Settings</Text>
       </View>
@@ -149,6 +149,20 @@ export const SettingsScreen: React.FC = () => {
           ))}
       </Card>
 
+      <Card style={styles.settingsCard}>
+        <Text style={styles.sectionTitle}>Mascot</Text>
+        <TouchableOpacity
+          style={styles.soundPackRow}
+          onPress={() => navigate('MascotSelector')}
+        >
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingLabel}>Choose Mascot</Text>
+            <Text style={styles.settingDescription}>Select your favorite mascot</Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+      </Card>
+
       <View style={styles.dangerSection}>
         <PrimaryButton
           title="Reset All Progress"
@@ -156,7 +170,7 @@ export const SettingsScreen: React.FC = () => {
         />
       </View>
       </ScrollView>
-    </GradientBackground>
+    </AnimatedBackground>
   );
 };
 
@@ -175,11 +189,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(108, 99, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: spacing.md,
   },
-  backButtonText: {
-    fontSize: typography.body.fontSize,
+  backButtonIcon: {
+    fontSize: 24,
     color: colors.primary,
+    fontWeight: '600',
   },
   title: {
     fontSize: typography.title.fontSize,
@@ -232,6 +253,11 @@ const styles = StyleSheet.create({
     fontSize: typography.body.fontSize,
     color: colors.primary,
     fontWeight: '600',
+  },
+  chevron: {
+    fontSize: 24,
+    color: colors.primary,
+    fontWeight: '300',
   },
   dangerSection: {
     marginTop: spacing.lg,

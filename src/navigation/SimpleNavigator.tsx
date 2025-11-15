@@ -1,14 +1,15 @@
 import React, { useState, ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { colors } from '../theme';
+import type { ScreenParams } from '../types/navigation';
 
-type ScreenName = 'Splash' | 'Home' | 'ModeSelect' | 'Game' | 'GameOver' | 'Shop' | 'Settings';
+type ScreenName = 'Splash' | 'Home' | 'ModeSelect' | 'Game' | 'GameOver' | 'Shop' | 'Settings' | 'MascotSelector';
 
 interface NavigationContextType {
   currentScreen: ScreenName;
-  navigate: (screen: ScreenName, params?: any) => void;
+  navigate: (screen: ScreenName, params?: ScreenParams) => void;
   goBack: () => void;
-  params: any;
+  params: ScreenParams;
 }
 
 const NavigationContext = React.createContext<NavigationContextType | null>(null);
@@ -32,9 +33,9 @@ export const SimpleNavigator: React.FC<SimpleNavigatorProps> = ({
 }) => {
   const [currentScreen, setCurrentScreen] = useState<ScreenName>(initialScreen);
   const [screenHistory, setScreenHistory] = useState<ScreenName[]>([initialScreen]);
-  const [params, setParams] = useState<any>({});
+  const [params, setParams] = useState<ScreenParams>({});
 
-  const navigate = (screen: ScreenName, newParams?: any) => {
+  const navigate = (screen: ScreenName, newParams?: ScreenParams) => {
     setScreenHistory([...screenHistory, currentScreen]);
     setCurrentScreen(screen);
     setParams(newParams || {});
@@ -67,7 +68,7 @@ export const SimpleNavigator: React.FC<SimpleNavigatorProps> = ({
 
 interface ScreenProps {
   name: ScreenName;
-  component: React.ComponentType<any>;
+  component: React.ComponentType<{ route?: { params?: ScreenParams } }>;
 }
 
 export const Screen: React.FC<ScreenProps> = ({ name, component: Component }) => {

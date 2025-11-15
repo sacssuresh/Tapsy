@@ -1,5 +1,6 @@
 import { soundManager, type SoundPackName } from './SoundManager';
 import soundPacksConfig from './soundpacks.json';
+import { warn as logWarn } from '../utils/logger';
 
 /**
  * Loads a sound pack by name
@@ -9,7 +10,7 @@ export async function loadSoundPack(packName: SoundPackName): Promise<void> {
   const packConfig = soundPacksConfig[packName];
   
   if (!packConfig) {
-    console.warn(`Sound pack "${packName}" not found in configuration`);
+    logWarn(`Sound pack "${packName}" not found in configuration`);
     return;
   }
 

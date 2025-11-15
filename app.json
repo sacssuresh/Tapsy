@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Tapsy",
-    "slug": "Tapsy",
+    "slug": "tapsy",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,14 +12,18 @@
       "backgroundColor": "#F7F7F8"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tapsy.app",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.tapsy.app",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
