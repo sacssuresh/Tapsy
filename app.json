@@ -13,7 +13,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tapsy.app",
+      "bundleIdentifier": "com.suresh.tapsy",
       "buildNumber": "1"
     },
     "android": {
