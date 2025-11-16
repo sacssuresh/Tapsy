@@ -62,6 +62,20 @@ class SoundManager {
     this.currentPack = packName;
 
     try {
+      // Ensure conservative audio mode to avoid background playback
+      try {
+        await Audio.setAudioModeAsync({
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+          interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: false,
+          interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
+        });
+      } catch (err) {
+        logWarn('Failed to set audio mode', err);
+      }
       // Load all sounds from the pack configuration
       const soundEntries = Object.entries(soundPackConfig) as [SoundName, string][];
       
@@ -261,6 +275,24 @@ class SoundManager {
    */
   setEnabled(enabled: boolean): void {
     this.isEnabled = enabled;
+  }
+
+  /**
+   * Mute immediately and stop any playing sounds when app backgrounds
+   */
+  async setAppActive(isActive: boolean): Promise<void> {
+    this.isEnabled = isActive;
+    if (!isActive) {
+      const stopPromises: Promise<void>[] = [];
+      for (const instances of this.soundInstances.values()) {
+        for (const instance of instances) {
+          stopPromises.push(
+            instance.stopAsync().catch(() => {})
+          );
+        }
+      }
+      await Promise.all(stopPromises);
+    }
   }
 
   /**

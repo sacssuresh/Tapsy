@@ -38,7 +38,8 @@ export const GameScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> 
     resumeGame,
   } = useGameStore();
 
-  const { settings } = useUserStore();
+  const { settings, bestScoreByMode } = useUserStore();
+  const modeBest = (bestScoreByMode && bestScoreByMode[mode]) || 0;
   const safeSettings = settings || {
     soundEnabled: true,
     hapticsEnabled: true,
@@ -276,6 +277,7 @@ export const GameScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> 
             <Text style={styles.modeText}>{modeName}</Text>
             <Text style={styles.levelText}>Level {level}</Text>
             <Text style={styles.scoreText}>Score: {score}</Text>
+            <Text style={styles.bestText}>Best: {modeBest}</Text>
           </View>
           <View style={styles.mascotContainer}>
             <AnimatedMascot name={selectedMascot} size={60} />
@@ -382,6 +384,10 @@ const styles = StyleSheet.create({
   scoreText: {
     fontSize: typography.body.fontSize - 1,
     color: typography.body.color,
+  },
+  bestText: {
+    fontSize: typography.caption.fontSize,
+    color: typography.caption.color,
   },
   gameArea: {
     flex: 1,

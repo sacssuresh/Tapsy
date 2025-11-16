@@ -6,7 +6,6 @@ import { useUserStore } from '../state/userStore';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { SecondaryButton } from '../components/SecondaryButton';
 import { StatsCard } from '../components/StatsCard';
-import { AdBanner } from '../components/AdBanner';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import { AnimatedMascot } from '../components/AnimatedMascot';
 import { getUserMascot, type MascotName } from '../mascots/MascotManager';
@@ -117,7 +116,7 @@ export const HomeScreen: React.FC = () => {
 
         <View style={styles.statsContainer}>
           <StatsCard
-            bestScore={bestScoreByMode.classic}
+            bestScore={Math.max(...Object.values(bestScoreByMode))}
             xp={xp}
             streak={currentStreakDays}
           />
@@ -150,8 +149,7 @@ export const HomeScreen: React.FC = () => {
             {currentScreen === 'Settings' && <View style={styles.activeIndicator} />}
           </TouchableOpacity>
         </View>
-        {/* Ad banner - hidden in Zen mode, shown on Home */}
-        <AdBanner />
+        {/* Ad banner removed as requested */}
       </View>
     </View>
   );

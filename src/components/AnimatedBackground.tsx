@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View, AppState } from 'react-native';
 
 /**
  * Subtle animated gradient background
@@ -8,15 +8,17 @@ import { Animated, StyleSheet, View } from 'react-native';
  */
 export const AnimatedBackground: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const animatedValue = useRef(new Animated.Value(0)).current;
+  const loopRef = useRef<Animated.CompositeAnimation | null>(null);
+  const isActiveRef = useRef<boolean>(true);
 
   useEffect(() => {
-    const animate = () => {
-      Animated.loop(
+    const start = () => {
+      loopRef.current = Animated.loop(
         Animated.sequence([
           Animated.timing(animatedValue, {
             toValue: 1,
-            duration: 14000, // 14 seconds
-            useNativeDriver: false, // Colors can't use native driver
+            duration: 14000,
+            useNativeDriver: false,
           }),
           Animated.timing(animatedValue, {
             toValue: 0,
@@ -24,10 +26,33 @@ export const AnimatedBackground: React.FC<{ children?: React.ReactNode }> = ({ c
             useNativeDriver: false,
           }),
         ])
-      ).start();
+      );
+      loopRef.current.start();
     };
 
-    animate();
+    const stop = () => {
+      loopRef.current?.stop();
+      loopRef.current = null;
+    };
+
+    start();
+
+    const sub = AppState.addEventListener('change', (next) => {
+      const wasActive = isActiveRef.current;
+      const nowActive = next === 'active';
+      if (wasActive && !nowActive) {
+        isActiveRef.current = false;
+        stop();
+      } else if (!wasActive && nowActive) {
+        isActiveRef.current = true;
+        start();
+      }
+    });
+
+    return () => {
+      sub.remove();
+      stop();
+    };
   }, [animatedValue]);
 
   // Interpolate opacity for smooth transitions

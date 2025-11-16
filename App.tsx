@@ -2,6 +2,7 @@ import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SimpleNavigator, Screen } from './src/navigation/SimpleNavigator';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { AppState } from 'react-native';
 import { SplashScreen } from './src/screens/SplashScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { ModeSelectScreen } from './src/screens/ModeSelectScreen';
@@ -10,10 +11,35 @@ import { GameOverScreen } from './src/screens/GameOverScreen';
 import { ShopScreen } from './src/screens/ShopScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { MascotSelectorScreen } from './src/screens/MascotSelectorScreen';
+import { useGameStore } from './src/state/gameStore';
+import { soundManager } from './src/audio/SoundManager';
 
 export default function App() {
   // Start directly on Home for faster loading
   // Storage will load in background
+  React.useEffect(() => {
+    let currentState = AppState.currentState;
+    const sub = AppState.addEventListener('change', (next) => {
+      if (currentState === 'active' && (next === 'inactive' || next === 'background')) {
+        // Pause gameplay and mute sounds when app backgrounds
+        try {
+          useGameStore.getState().pauseGame();
+        } catch {}
+        try {
+          soundManager.setEnabled(false);
+        } catch {}
+      }
+      if ((currentState === 'inactive' || currentState === 'background') && next === 'active') {
+        // Re-enable sounds on foreground; gameplay remains paused until user resumes
+        try {
+          soundManager.setEnabled(true);
+        } catch {}
+      }
+      currentState = next;
+    });
+    return () => sub.remove();
+  }, []);
+
   return (
     <ErrorBoundary>
       <SafeAreaProvider>

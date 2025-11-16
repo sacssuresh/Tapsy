@@ -53,6 +53,7 @@ export const ModeSelectScreen: React.FC = () => {
   const { navigate, goBack } = useSimpleNavigation();
   const insets = useSafeAreaInsets();
   const { bestScoreByMode } = useUserStore();
+  const overallBest = Math.max(...Object.values(bestScoreByMode || { classic: 0, speed: 0, reverse: 0, zen: 0 }));
 
   const handleModeSelect = (mode: GameMode) => {
     navigate('Game', { mode });
@@ -71,6 +72,7 @@ export const ModeSelectScreen: React.FC = () => {
         style={[styles.scrollView, { zIndex: 1 }]} 
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + spacing.lg }]}
       >
+      <Text style={styles.overallBest}>Best (All Modes): {overallBest}</Text>
       {modes.map((modeConfig) => (
         <ModeCard
           key={modeConfig.mode}
@@ -185,6 +187,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: spacing.md,
     paddingHorizontal: spacing.lg,
+  },
+  overallBest: {
+    fontSize: typography.body.fontSize,
+    color: typography.body.color,
+    fontWeight: '600',
+    marginBottom: spacing.sm,
   },
   modeCard: {
     marginBottom: spacing.md,
