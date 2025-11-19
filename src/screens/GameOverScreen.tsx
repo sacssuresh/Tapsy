@@ -12,6 +12,7 @@ import { Mascot } from '../components/Mascot';
 import { Confetti } from '../components/Confetti';
 import { colors, typography, spacing } from '../theme';
 import { soundManager } from '../audio/SoundManager';
+import { submitScore, type LeaderboardMode } from '../services/leaderboardService';
 import type { GameMode } from '../types';
 
 export const GameOverScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> = ({ route }) => {
@@ -23,10 +24,10 @@ export const GameOverScreen: React.FC<{ route?: { params?: { mode?: GameMode } }
   const {
     bestScoreByMode,
     updateBestScore,
-    updateXP,
     updateStreak,
     incrementGamesPlayed,
     settings,
+    username,
   } = useUserStore();
   
   const safeSettings = settings || {
@@ -37,16 +38,25 @@ export const GameOverScreen: React.FC<{ route?: { params?: { mode?: GameMode } }
 
   const bestScore = bestScoreByMode[mode];
   const isNewBest = score > bestScore;
-  const xpGained = Math.floor(level * 10);
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     // Update stats
     const wasNewBest = score > bestScore;
     updateBestScore(mode, score);
-    updateXP(xpGained);
     updateStreak();
     incrementGamesPlayed();
+
+    // Submit score to leaderboard (if username is set and score is new best)
+    if (username && username.trim() && wasNewBest) {
+      // Map game mode to leaderboard mode: 'speed' -> 'hard'
+      const leaderboardMode: LeaderboardMode = mode === 'speed' ? 'hard' : mode === 'reverse' ? 'reverse' : 'classic';
+      
+      submitScore(leaderboardMode, score, username).catch((error) => {
+        // Fail silently - leaderboard is non-critical
+        console.warn('Error submitting score to leaderboard:', error);
+      });
+    }
 
     // Show confetti if new best
     if (wasNewBest) {
@@ -75,12 +85,6 @@ export const GameOverScreen: React.FC<{ route?: { params?: { mode?: GameMode } }
     navigate('Home');
   };
 
-  const handleWatchAd = () => {
-    // TODO: Integrate AdMob rewarded ad here
-    // For now, just show a placeholder message
-    alert('Ad retry feature coming soon!');
-  };
-
   const modeName = mode.charAt(0).toUpperCase() + mode.slice(1);
   const mascotExpression = isNewBest ? 'celebrate' : 'sad';
 
@@ -102,7 +106,6 @@ export const GameOverScreen: React.FC<{ route?: { params?: { mode?: GameMode } }
           Best Score: {isNewBest ? score : bestScore}
           {Boolean(isNewBest) && <Text style={styles.newBest}> (New Best!)</Text>}
         </Text>
-        <Text style={styles.xpLabel}>XP Gained: +{xpGained}</Text>
       </Card>
 
       <View style={styles.buttonContainer}>
@@ -111,15 +114,6 @@ export const GameOverScreen: React.FC<{ route?: { params?: { mode?: GameMode } }
         <SecondaryButton title="Change Mode" onPress={handleChangeMode} />
         <View style={styles.buttonSpacing} />
         <SecondaryButton title="Home" onPress={handleGoHome} />
-        {Boolean(mode !== 'zen') && (
-          <>
-            <View style={styles.buttonSpacing} />
-            <SecondaryButton
-              title="Watch ad to retry from this level"
-              onPress={handleWatchAd}
-            />
-          </>
-        )}
       </View>
       </ScrollView>
     </AnimatedBackground>
@@ -172,10 +166,6 @@ const styles = StyleSheet.create({
   newBest: {
     color: colors.accentAqua,
     fontWeight: '600',
-  },
-  xpLabel: {
-    fontSize: typography.body.fontSize,
-    color: typography.subtitle.color,
   },
   buttonContainer: {
     width: '100%',

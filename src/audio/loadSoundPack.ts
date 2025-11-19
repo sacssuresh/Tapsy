@@ -3,10 +3,10 @@ import soundPacksConfig from './soundpacks.json';
 import { warn as logWarn } from '../utils/logger';
 
 /**
- * Loads a sound pack by name
- * Reads configuration from soundpacks.json
+ * Loads the bubble sound pack
+ * Note: Bubble is the only available sound pack
  */
-export async function loadSoundPack(packName: SoundPackName): Promise<void> {
+export async function loadSoundPack(packName: SoundPackName = 'bubble'): Promise<void> {
   const packConfig = soundPacksConfig[packName];
   
   if (!packConfig) {
@@ -19,6 +19,7 @@ export async function loadSoundPack(packName: SoundPackName): Promise<void> {
 
 /**
  * Gets available sound packs from configuration
+ * Note: Currently only 'bubble' is available
  */
 export function getAvailableSoundPacks(): SoundPackName[] {
   return Object.keys(soundPacksConfig) as SoundPackName[];
@@ -26,6 +27,7 @@ export function getAvailableSoundPacks(): SoundPackName[] {
 
 /**
  * Checks if a sound pack exists in configuration
+ * Note: Currently only 'bubble' is valid
  */
 export function isValidSoundPack(packName: string): packName is SoundPackName {
   return packName in soundPacksConfig;

@@ -16,23 +16,49 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   useGradient = false,
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const shadowOpacityAnim = useRef(new Animated.Value(0.07)).current;
+  const shadowRadiusAnim = useRef(new Animated.Value(14)).current;
 
   const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.96,
-      useNativeDriver: true,
-      stiffness: 300,
-      damping: 20,
-    }).start();
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 0.96,
+        useNativeDriver: true,
+        stiffness: 300,
+        damping: 20,
+      }),
+      Animated.timing(shadowOpacityAnim, {
+        toValue: 0.15,
+        duration: 150,
+        useNativeDriver: false,
+      }),
+      Animated.timing(shadowRadiusAnim, {
+        toValue: 20,
+        duration: 150,
+        useNativeDriver: false,
+      }),
+    ]).start();
   };
 
   const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      stiffness: 300,
-      damping: 20,
-    }).start();
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        stiffness: 300,
+        damping: 20,
+      }),
+      Animated.timing(shadowOpacityAnim, {
+        toValue: 0.07,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(shadowRadiusAnim, {
+        toValue: 14,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+    ]).start();
   };
 
   const buttonStyle = useGradient
@@ -47,37 +73,50 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       disabled={!!disabled}
       activeOpacity={1}
     >
+      {/* Outer Animated.View: Handles shadow properties (JS-driven) */}
       <Animated.View
         style={[
-          buttonStyle,
-          !!disabled && styles.disabled,
-          { transform: [{ scale: scaleAnim }] },
+          {
+            shadowOpacity: shadowOpacityAnim,
+            shadowRadius: shadowRadiusAnim,
+          },
         ]}
       >
-        {useGradient ? (
-          <View style={StyleSheet.absoluteFill}>
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  backgroundColor: '#8878FF',
-                  borderRadius: 30,
-                },
-              ]}
-            />
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  backgroundColor: '#A088FF',
-                  borderRadius: 30,
-                  opacity: 0.3,
-                },
-              ]}
-            />
-          </View>
-        ) : null}
-        <Text style={styles.text}>{title}</Text>
+        {/* Inner Animated.View: Handles transform (native-driven) */}
+        <Animated.View
+          style={[
+            buttonStyle,
+            !!disabled && styles.disabled,
+            {
+              transform: [{ scale: scaleAnim }],
+            },
+          ]}
+        >
+          {useGradient ? (
+            <View style={StyleSheet.absoluteFill}>
+              <View
+                style={[
+                  StyleSheet.absoluteFill,
+                  {
+                    backgroundColor: '#8878FF',
+                    borderRadius: 30,
+                  },
+                ]}
+              />
+              <View
+                style={[
+                  StyleSheet.absoluteFill,
+                  {
+                    backgroundColor: '#A088FF',
+                    borderRadius: 30,
+                    opacity: 0.3,
+                  },
+                ]}
+              />
+            </View>
+          ) : null}
+          <Text style={styles.text}>{title}</Text>
+        </Animated.View>
       </Animated.View>
     </TouchableOpacity>
   );
@@ -92,8 +131,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
     elevation: 5,
     overflow: 'hidden',
   },

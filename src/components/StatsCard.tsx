@@ -5,17 +5,13 @@ import { colors, typography, spacing } from '../theme';
 
 interface StatsCardProps {
   bestScore: number;
-  xp: number;
   streak: number;
 }
 
 export const StatsCard: React.FC<StatsCardProps> = ({
   bestScore,
-  xp,
   streak,
 }) => {
-  const xpLevel = Math.floor(xp / 100) + 1;
-
   return (
     <Card>
       <View style={styles.container}>
@@ -23,12 +19,6 @@ export const StatsCard: React.FC<StatsCardProps> = ({
           <Text style={styles.icon}>⭐</Text>
           <Text style={styles.label}>Best Score</Text>
           <Text style={styles.value}>{bestScore}</Text>
-        </View>
-        <View style={styles.divider} />
-        <View style={styles.stat}>
-          <Text style={styles.icon}>🧠</Text>
-          <Text style={styles.label}>Level</Text>
-          <Text style={styles.value}>{xpLevel}</Text>
         </View>
         <View style={styles.divider} />
         <View style={styles.stat}>

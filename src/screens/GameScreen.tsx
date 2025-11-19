@@ -11,7 +11,8 @@ import { DynamicMessage } from '../components/DynamicMessage';
 import { Sparkle } from '../components/Sparkle';
 import { AnimatedMascot } from '../components/AnimatedMascot';
 import { getUserMascot, type MascotName } from '../mascots/MascotManager';
-import { colors, typography, spacing, animations } from '../theme';
+import { animations } from '../theme';
+import { useTheme } from '../hooks/useTheme';
 import { soundManager } from '../audio/SoundManager';
 import type { GameMode, TileIndex } from '../types';
 
@@ -46,6 +47,7 @@ export const GameScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> 
     hintsEnabled: false,
   };
   const [status, setStatus] = useState<GameStatus>('watching');
+  const theme = useTheme();
   const [sequencePlayed, setSequencePlayed] = useState(false);
   const [sparkles, setSparkles] = useState<Array<{ id: number; x: number; y: number }>>([]);
   const sparkleIdRef = useRef(0);
@@ -269,17 +271,29 @@ export const GameScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> 
           },
         ]}
       >
-        <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
-          <TouchableOpacity onPress={goBack} disabled={false} style={styles.backButton}>
-            <Text style={styles.backButtonIcon}>←</Text>
+        <View style={[styles.header, { paddingTop: insets.top + theme.spacing.md, paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.md }]}>
+          <TouchableOpacity onPress={goBack} disabled={false} style={[styles.backButton, { backgroundColor: `${theme.colors.primary}1A` }]}>
+            <Text style={[styles.backButtonIcon, { color: theme.colors.primary }]}>←</Text>
           </TouchableOpacity>
           <View style={styles.headerInfo}>
-            <Text style={styles.modeText}>{modeName}</Text>
-            <Text style={styles.levelText}>Level {level}</Text>
-            <Text style={styles.scoreText}>Score: {score}</Text>
-            <Text style={styles.bestText}>Best: {modeBest}</Text>
+            <Text style={[styles.modeText, { 
+              fontSize: theme.typography.body.fontSize + 2,
+              color: theme.colors.textPrimary,
+            }]}>{modeName}</Text>
+            <Text style={[styles.levelText, { 
+              fontSize: theme.typography.body.fontSize - 1,
+              color: theme.colors.textPrimary,
+            }]}>Level {level}</Text>
+            <Text style={[styles.scoreText, { 
+              fontSize: theme.typography.body.fontSize - 1,
+              color: theme.colors.textPrimary,
+            }]}>Score: {score}</Text>
+            <Text style={[styles.bestText, { 
+              fontSize: theme.typography.caption.fontSize,
+              color: theme.colors.textSecondary,
+            }]}>Best: {modeBest}</Text>
           </View>
-          <View style={styles.mascotContainer}>
+          <View style={[styles.mascotContainer, { marginLeft: theme.spacing.sm }]}>
             <AnimatedMascot name={selectedMascot} size={60} />
           </View>
         </View>
@@ -289,6 +303,8 @@ export const GameScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> 
             styles.gameArea,
             {
               transform: [{ scale: levelUpAnim }],
+              paddingHorizontal: theme.spacing.md,
+              paddingVertical: theme.spacing.md,
             },
           ]}
         >
@@ -307,6 +323,7 @@ export const GameScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> 
             onTilePressWithPosition={onTilePressWithPosition}
             disabled={Boolean(Boolean(isPlayingSequence) || Boolean(isPaused) || Boolean(isGameOver) || status === 'levelComplete')}
             hintTileIndex={hintTileIndex}
+            tileColors={theme.tileColors}
             playSound={(tileIndex) => {
               if (safeSettings.soundEnabled) {
                 soundManager.playTileSound(tileIndex);
@@ -326,7 +343,11 @@ export const GameScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> 
           />
         ))}
 
-        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
+        <View style={[styles.footer, { 
+          paddingHorizontal: theme.spacing.lg,
+          paddingTop: theme.spacing.md,
+          paddingBottom: insets.bottom + theme.spacing.sm,
+        }]}>
           <SecondaryButton
             title={Boolean(isPaused) ? 'Resume' : 'Pause'}
             onPress={handlePause}
@@ -348,57 +369,35 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
     alignItems: 'center',
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(108, 99, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md,
+    marginRight: 0,
   },
   backButtonIcon: {
     fontSize: 24,
-    color: colors.primary,
     fontWeight: '600',
   },
   headerInfo: {
     flex: 1,
+    marginLeft: 0,
   },
-  mascotContainer: {
-    marginLeft: spacing.sm,
-  },
+  mascotContainer: {},
   modeText: {
-    fontSize: typography.body.fontSize + 2,
     fontWeight: '600',
-    color: typography.body.color,
   },
-  levelText: {
-    fontSize: typography.body.fontSize - 1,
-    color: typography.body.color,
-  },
-  scoreText: {
-    fontSize: typography.body.fontSize - 1,
-    color: typography.body.color,
-  },
-  bestText: {
-    fontSize: typography.caption.fontSize,
-    color: typography.caption.color,
-  },
+  levelText: {},
+  scoreText: {},
+  bestText: {},
   gameArea: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
   },
-  footer: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
-  },
+  footer: {},
 });
 

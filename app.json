@@ -28,6 +28,9 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      "./plugins/removeUnusedModules"
+    ],
     "extra": {
       "eas": {
         "projectId": "63a24f61-084a-47c5-abb3-1c01db0e75ef"

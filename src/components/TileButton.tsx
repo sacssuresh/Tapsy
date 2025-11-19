@@ -116,7 +116,7 @@ export const TileButton: React.FC<TileButtonProps> = ({
             useNativeDriver: true,
           }),
           Animated.timing(glowOpacityAnim, {
-            toValue: 0.6, // Colored glow
+            toValue: 1, // Colored glow at full opacity for shadow effect
             duration: blinkDuration / 2,
             useNativeDriver: true,
           }),
@@ -220,19 +220,19 @@ export const TileButton: React.FC<TileButtonProps> = ({
       onPressWithPosition(pageX, pageY);
     }
     
-    // Squishy bounce animation
+    // Pulse animation - scale from 1 → 1.08 → 1
     Animated.sequence([
-      Animated.spring(tapScaleAnim, {
-        toValue: 0.92, // Scale down more for squishy effect
+      Animated.timing(tapScaleAnim, {
+        toValue: 1.08, // Scale up for pulse effect
+        duration: 150,
         useNativeDriver: true,
-        tension: 300,
-        friction: 8,
+        easing: Easing.out(Easing.ease),
       }),
-      Animated.spring(tapScaleAnim, {
-        toValue: 1, // Bounce back
+      Animated.timing(tapScaleAnim, {
+        toValue: 1, // Scale back to normal
+        duration: 150,
         useNativeDriver: true,
-        tension: 300,
-        friction: 8,
+        easing: Easing.in(Easing.ease),
       }),
     ]).start();
     
@@ -273,13 +273,17 @@ export const TileButton: React.FC<TileButtonProps> = ({
             },
           ]}
         />
-        {/* Colored glow effect */}
+        {/* Colored glow effect with shadow */}
         <Animated.View
           style={[
             styles.glow,
             {
               backgroundColor: color,
               opacity: glowOpacityAnim,
+              shadowColor: color, // Match tile color
+              shadowOpacity: 0.8,
+              shadowRadius: 12,
+              shadowOffset: { width: 0, height: 0 },
             },
           ]}
         />
@@ -329,10 +333,8 @@ const styles = StyleSheet.create({
   glow: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
+    // Shadow properties will be set dynamically via inline style to match tile color
+    elevation: 12, // Android elevation for glow effect
   },
   hintBorder: {
     ...StyleSheet.absoluteFillObject,

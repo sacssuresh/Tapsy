@@ -1,11 +1,11 @@
-import { Audio } from 'expo-av';
+import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import type { TileIndex } from '../types';
 import { warn as logWarn, error as logError } from '../utils/logger';
 
 /**
  * Sound pack configuration type
  */
-export type SoundPackName = 'pastel' | 'bubble' | 'anime';
+export type SoundPackName = 'bubble';
 
 /**
  * Sound name type
@@ -61,21 +61,21 @@ class SoundManager {
     this.isLoading = true;
     this.currentPack = packName;
 
-    try {
-      // Ensure conservative audio mode to avoid background playback
       try {
-        await Audio.setAudioModeAsync({
-          staysActiveInBackground: false,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: false,
-          interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
-          allowsRecordingIOS: false,
-          playsInSilentModeIOS: false,
-          interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
-        });
-      } catch (err) {
-        logWarn('Failed to set audio mode', err);
-      }
+        // Ensure conservative audio mode to avoid background playback
+        try {
+          await Audio.setAudioModeAsync({
+            staysActiveInBackground: false,
+            shouldDuckAndroid: true,
+            playThroughEarpieceAndroid: false,
+            interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+            allowsRecordingIOS: false,
+            playsInSilentModeIOS: false,
+            interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+          });
+        } catch (err) {
+          logWarn('Failed to set audio mode', err);
+        }
       // Load all sounds from the pack configuration
       const soundEntries = Object.entries(soundPackConfig) as [SoundName, string][];
       
@@ -130,27 +130,13 @@ class SoundManager {
       // Map pack name + sound name to require() calls
       // Extract the actual filename from soundName (e.g., "tile0" -> "tile1")
       const soundFileMap: Record<string, number> = {
-        // Pastel pack - files are in assets/sounds/pastel/
-        'pastel_tile0': require('../../assets/sounds/pastel/pastel_tile1.wav'),
-        'pastel_tile1': require('../../assets/sounds/pastel/pastel_tile2.wav'),
-        'pastel_tile2': require('../../assets/sounds/pastel/pastel_tile3.wav'),
-        'pastel_tile3': require('../../assets/sounds/pastel/pastel_tile4.wav'),
-        'pastel_success': require('../../assets/sounds/pastel/pastel_success.wav'),
-        'pastel_fail': require('../../assets/sounds/pastel/pastel_fail.wav'),
         // Bubble pack - files are in assets/sounds/bubble/
-        'bubble_tile0': require('../../assets/sounds/bubble/bubble_tile1.wav'),
-        'bubble_tile1': require('../../assets/sounds/bubble/bubble_tile2.wav'),
-        'bubble_tile2': require('../../assets/sounds/bubble/bubble_tile3.wav'),
-        'bubble_tile3': require('../../assets/sounds/bubble/bubble_tile4.wav'),
-        'bubble_success': require('../../assets/sounds/bubble/bubble_success.wav'),
-        'bubble_fail': require('../../assets/sounds/bubble/bubble_fail.wav'),
-        // Anime pack - files are in assets/sounds/anime/
-        'anime_tile0': require('../../assets/sounds/anime/anime_tile1.wav'),
-        'anime_tile1': require('../../assets/sounds/anime/anime_tile2.wav'),
-        'anime_tile2': require('../../assets/sounds/anime/anime_tile3.wav'),
-        'anime_tile3': require('../../assets/sounds/anime/anime_tile4.wav'),
-        'anime_success': require('../../assets/sounds/anime/anime_success.wav'),
-        'anime_fail': require('../../assets/sounds/anime/anime_fail.wav'),
+        'bubble_tile0': require('../../assets/sounds/bubble/bubble_tile1.mp3'),
+        'bubble_tile1': require('../../assets/sounds/bubble/bubble_tile2.mp3'),
+        'bubble_tile2': require('../../assets/sounds/bubble/bubble_tile3.mp3'),
+        'bubble_tile3': require('../../assets/sounds/bubble/bubble_tile4.mp3'),
+        'bubble_success': require('../../assets/sounds/bubble/bubble_success.mp3'),
+        'bubble_fail': require('../../assets/sounds/bubble/bubble_fail.mp3'),
       };
 
       const key = `${packName}_${soundName}`;

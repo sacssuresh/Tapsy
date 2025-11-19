@@ -40,20 +40,13 @@ const modes: ModeConfig[] = [
     icon: '🔁',
     borderColor: '#F5A623', // Pastel yellow
   },
-  {
-    mode: 'zen',
-    name: 'Zen',
-    description: 'Slower and calmer, no ads.',
-    icon: '🧘‍♂️',
-    borderColor: '#2EC4B6', // Pastel green
-  },
 ];
 
 export const ModeSelectScreen: React.FC = () => {
   const { navigate, goBack } = useSimpleNavigation();
   const insets = useSafeAreaInsets();
   const { bestScoreByMode } = useUserStore();
-  const overallBest = Math.max(...Object.values(bestScoreByMode || { classic: 0, speed: 0, reverse: 0, zen: 0 }));
+  const overallBest = Math.max(...Object.values(bestScoreByMode || { classic: 0, speed: 0, reverse: 0 }));
 
   const handleModeSelect = (mode: GameMode) => {
     navigate('Game', { mode });

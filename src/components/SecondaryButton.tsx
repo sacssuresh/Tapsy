@@ -15,23 +15,49 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
   disabled = false,
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const shadowOpacityAnim = useRef(new Animated.Value(0.05)).current;
+  const shadowRadiusAnim = useRef(new Animated.Value(8)).current;
 
   const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.96,
-      useNativeDriver: true,
-      stiffness: 300,
-      damping: 20,
-    }).start();
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 0.96,
+        useNativeDriver: true,
+        stiffness: 300,
+        damping: 20,
+      }),
+      Animated.timing(shadowOpacityAnim, {
+        toValue: 0.12,
+        duration: 150,
+        useNativeDriver: false,
+      }),
+      Animated.timing(shadowRadiusAnim, {
+        toValue: 14,
+        duration: 150,
+        useNativeDriver: false,
+      }),
+    ]).start();
   };
 
   const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      stiffness: 300,
-      damping: 20,
-    }).start();
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        stiffness: 300,
+        damping: 20,
+      }),
+      Animated.timing(shadowOpacityAnim, {
+        toValue: 0.05,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(shadowRadiusAnim, {
+        toValue: 8,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+    ]).start();
   };
 
   return (
@@ -42,15 +68,28 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
       disabled={!!disabled}
       activeOpacity={1}
     >
+      {/* Outer Animated.View: Handles shadow properties (JS-driven) */}
       <Animated.View
         style={[
-          { transform: [{ scale: scaleAnim }] },
-          !!disabled && styles.disabled,
+          {
+            shadowOpacity: shadowOpacityAnim,
+            shadowRadius: shadowRadiusAnim,
+          },
         ]}
       >
-        <BlurView intensity={12} tint="light" style={styles.button}>
-          <Text style={styles.text}>{title}</Text>
-        </BlurView>
+        {/* Inner Animated.View: Handles transform (native-driven) */}
+        <Animated.View
+          style={[
+            {
+              transform: [{ scale: scaleAnim }],
+            },
+            !!disabled && styles.disabled,
+          ]}
+        >
+          <BlurView intensity={12} tint="light" style={styles.button}>
+            <Text style={styles.text}>{title}</Text>
+          </BlurView>
+        </Animated.View>
       </Animated.View>
     </TouchableOpacity>
   );
@@ -68,8 +107,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
     elevation: 3,
     overflow: 'hidden',
   },

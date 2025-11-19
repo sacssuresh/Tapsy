@@ -11,6 +11,7 @@ import { GameOverScreen } from './src/screens/GameOverScreen';
 import { ShopScreen } from './src/screens/ShopScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { MascotSelectorScreen } from './src/screens/MascotSelectorScreen';
+import { LeaderboardScreen } from './src/screens/LeaderboardScreen';
 import { useGameStore } from './src/state/gameStore';
 import { soundManager } from './src/audio/SoundManager';
 
@@ -52,6 +53,7 @@ export default function App() {
           <Screen name="Shop" component={ShopScreen} />
           <Screen name="Settings" component={SettingsScreen} />
           <Screen name="MascotSelector" component={MascotSelectorScreen} />
+          <Screen name="Leaderboard" component={LeaderboardScreen} />
         </SimpleNavigator>
       </SafeAreaProvider>
     </ErrorBoundary>

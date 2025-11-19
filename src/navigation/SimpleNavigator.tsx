@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { colors } from '../theme';
 import type { ScreenParams } from '../types/navigation';
 
-type ScreenName = 'Splash' | 'Home' | 'ModeSelect' | 'Game' | 'GameOver' | 'Shop' | 'Settings' | 'MascotSelector';
+type ScreenName = 'Splash' | 'Home' | 'ModeSelect' | 'Game' | 'GameOver' | 'Shop' | 'Settings' | 'MascotSelector' | 'Leaderboard';
 
 interface NavigationContextType {
   currentScreen: ScreenName;

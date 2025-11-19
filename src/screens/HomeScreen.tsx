@@ -1,31 +1,24 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSimpleNavigation } from '../navigation/SimpleNavigator';
 import { useUserStore } from '../state/userStore';
-import { PrimaryButton } from '../components/PrimaryButton';
-import { SecondaryButton } from '../components/SecondaryButton';
-import { StatsCard } from '../components/StatsCard';
+import { NeonButton } from '../components/NeonButton';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import { AnimatedMascot } from '../components/AnimatedMascot';
-import { getUserMascot, type MascotName } from '../mascots/MascotManager';
-import { colors, typography, spacing } from '../theme';
-const taglines = [
-  'Big brain mode: ON.',
-  'Train your brain with Tapsy & friends!',
-  'Tap fast, think faster.',
-  'Your mascot is cheering for you!',
-  "Let's see that memory magic!",
-];
+import { UsernameModal } from '../components/UsernameModal';
+import { getUserMascot, setUserMascot, getNextMascot, type MascotName } from '../mascots/MascotManager';
+import { useTheme } from '../hooks/useTheme';
+import type { GameMode } from '../types';
 
 export const HomeScreen: React.FC = () => {
   const { navigate, currentScreen } = useSimpleNavigation();
   const insets = useSafeAreaInsets();
   const userStore = useUserStore();
-  const { loadFromStorage } = useUserStore();
+  const { loadFromStorage, username, updateUsername } = useUserStore();
   const [selectedMascot, setSelectedMascot] = useState<MascotName>('tapsy-kid');
-  const [tagline] = useState(() => taglines[Math.floor(Math.random() * taglines.length)]);
-  const taglineOpacity = useRef(new Animated.Value(0)).current;
+  const [showUsernameModal, setShowUsernameModal] = useState(false);
+  const theme = useTheme();
   
   // Load storage, sound pack, and home mascot in background on mount
   useEffect(() => {
@@ -37,20 +30,24 @@ export const HomeScreen: React.FC = () => {
         
         if (!isMounted) return;
         
+        // Show username modal if username is null/empty (first launch)
+        if (!userStore.username || userStore.username.trim() === '') {
+          setShowUsernameModal(true);
+        }
+        
         // Load user's selected mascot
         const userMascot = await getUserMascot();
         if (isMounted) {
           setSelectedMascot(userMascot);
         }
         
-        // Load sound pack if not already loaded
-        const packName = userStore.selectedSoundPack || 'bubble';
+        // Load bubble sound pack if not already loaded
         const { soundManager } = await import('../audio/SoundManager');
-        const { loadSoundPack, isValidSoundPack } = await import('../audio/loadSoundPack');
+        const { loadSoundPack } = await import('../audio/loadSoundPack');
         
-        // Check if pack is already loaded before attempting to load
-        if (isValidSoundPack(packName) && !soundManager.isPackLoaded(packName as any)) {
-          await loadSoundPack(packName as any);
+        // Always load bubble pack (the only pack available)
+        if (!soundManager.isPackLoaded('bubble')) {
+          await loadSoundPack('bubble');
         }
         
         if (!isMounted) return;
@@ -73,87 +70,206 @@ export const HomeScreen: React.FC = () => {
     };
   }, [loadFromStorage]);
 
-  // Fade-in animation for tagline
-  useEffect(() => {
-    Animated.timing(taglineOpacity, {
-      toValue: 1,
-      duration: 250,
-      useNativeDriver: true,
-    }).start();
-  }, [taglineOpacity]);
-  
-  const bestScoreByMode = userStore.bestScoreByMode || { classic: 0, speed: 0, reverse: 0, zen: 0 };
-  const xp = Number(userStore.xp) || 0;
-  const currentStreakDays = Number(userStore.currentStreakDays) || 0;
-
-  const navigateToModes = () => {
-    navigate('ModeSelect');
-  };
-
-  const navigateToClassic = () => {
-    navigate('Game', { mode: 'classic' });
+  const navigateToGame = (mode: GameMode) => {
+    navigate('Game', { mode });
   };
 
   const navigateToSettings = () => {
     navigate('Settings');
   };
 
+  const navigateToLeaderboard = () => {
+    navigate('Leaderboard');
+  };
+
+  const handleToggleCharacter = async () => {
+    const newMascot = getNextMascot(selectedMascot);
+    setSelectedMascot(newMascot);
+    await setUserMascot(newMascot);
+  };
+
+  const handleUsernameSubmit = async (username: string) => {
+    await updateUsername(username);
+    setShowUsernameModal(false);
+  };
+
+  // Neon colors for buttons
+  const classicColor = '#5EEBFF'; // Cyan
+  const reverseColor = '#FFB562'; // Orange (for Reverse mode)
+  const hardColor = '#FF75D8'; // Pink (for Hard/Speed mode)
+
   return (
     <View style={styles.container}>
       <AnimatedBackground />
-      <View style={styles.content}>
-        <AnimatedMascot name={selectedMascot} size={130} />
-        <Text style={styles.title}>Tapsy</Text>
-        <Animated.Text style={[styles.subtitle, { opacity: taglineOpacity }]}>
-          {tagline}
-        </Animated.Text>
-
-        <View style={styles.buttonContainer}>
-          <PrimaryButton title="Play Classic" onPress={navigateToClassic} useGradient={true} />
-          <View style={styles.buttonSpacing} />
-          <SecondaryButton title="Modes" onPress={navigateToModes} />
+      <UsernameModal
+        visible={showUsernameModal}
+        onSubmit={handleUsernameSubmit}
+      />
+      <View style={[styles.content, getContentStyle(theme, insets)]}>
+        {/* Character - centered and tappable */}
+        <View style={styles.characterContainer}>
+          <AnimatedMascot 
+            name={selectedMascot} 
+            size={130}
+            onPress={handleToggleCharacter}
+          />
+          <Text style={getHintTextStyle(theme)}>
+            Tap to change character
+          </Text>
         </View>
 
-        <View style={styles.statsContainer}>
-          <StatsCard
-            bestScore={Math.max(...Object.values(bestScoreByMode))}
-            xp={xp}
-            streak={currentStreakDays}
+        {/* Title area - Poppins SemiBold */}
+        <View style={styles.titleContainer}>
+          <Text style={getTitleStyle(theme)}>
+            Tapsy
+          </Text>
+          {username && (
+            <Text style={getUsernameStyle(theme)}>
+              @{username}
+            </Text>
+          )}
+        </View>
+
+        {/* 3 Big Buttons */}
+        <View style={getButtonContainerStyle(theme)}>
+          <NeonButton
+            title="Classic"
+            onPress={() => navigateToGame('classic')}
+            neonColor={classicColor}
+          />
+          <NeonButton
+            title="Reverse"
+            onPress={() => navigateToGame('reverse')}
+            neonColor={reverseColor}
+          />
+          <NeonButton
+            title="Hard"
+            onPress={() => navigateToGame('speed')}
+            neonColor={hardColor}
           />
         </View>
       </View>
 
-      <View style={[styles.bottomSection, { paddingBottom: insets.bottom + spacing.md, zIndex: 1 }]}>
-        <View style={styles.bottomNav}>
-          <TouchableOpacity style={styles.navItem} onPress={() => {}} disabled={false}>
-            <Text
-              style={[
-                styles.navText,
-                currentScreen === 'Home' ? styles.navTextActive : styles.navTextInactive,
-              ]}
-            >
+      {/* Bottom Navigation */}
+      <View style={getBottomSectionStyle(theme, insets)}>
+        <View style={getBottomNavStyle(theme)}>
+          <TouchableOpacity style={getNavItemStyle(theme)} onPress={() => {}} disabled={false}>
+            <Text style={getNavTextStyle(theme, currentScreen === 'Home')}>
               Home
             </Text>
-            {currentScreen === 'Home' && <View style={styles.activeIndicator} />}
+            {currentScreen === 'Home' && <View style={getActiveIndicatorStyle(theme)} />}
           </TouchableOpacity>
-          {/* Shop hidden per user request */}
-          <TouchableOpacity style={styles.navItem} onPress={navigateToSettings} disabled={false}>
-            <Text
-              style={[
-                styles.navText,
-                currentScreen === 'Settings' ? styles.navTextActive : styles.navTextInactive,
-              ]}
-            >
+          <TouchableOpacity style={getNavItemStyle(theme)} onPress={navigateToLeaderboard} disabled={false}>
+            <Text style={getNavTextStyle(theme, currentScreen === 'Leaderboard')}>
+              Leaderboard
+            </Text>
+            {currentScreen === 'Leaderboard' && <View style={getActiveIndicatorStyle(theme)} />}
+          </TouchableOpacity>
+          <TouchableOpacity style={getNavItemStyle(theme)} onPress={navigateToSettings} disabled={false}>
+            <Text style={getNavTextStyle(theme, currentScreen === 'Settings')}>
               Settings
             </Text>
-            {currentScreen === 'Settings' && <View style={styles.activeIndicator} />}
+            {currentScreen === 'Settings' && <View style={getActiveIndicatorStyle(theme)} />}
           </TouchableOpacity>
         </View>
-        {/* Ad banner removed as requested */}
       </View>
     </View>
   );
 };
+
+const getContentStyle = (theme: ReturnType<typeof useTheme>, insets: { top: number; bottom: number }) => ({
+  paddingTop: insets.top + theme.spacing.xl,
+  paddingBottom: insets.bottom + theme.spacing.xl,
+  paddingHorizontal: theme.spacing.lg,
+});
+
+const getHintTextStyle = (theme: ReturnType<typeof useTheme>) => ({
+  fontSize: 12,
+  color: theme.colors.textSecondary,
+  marginTop: 8,
+  opacity: 0.7,
+  fontFamily: Platform.select({
+    ios: 'SF Pro Rounded',
+    android: 'Poppins',
+    default: 'Poppins',
+  }),
+});
+
+const getTitleStyle = (theme: ReturnType<typeof useTheme>) => ({
+  fontSize: 42,
+  fontWeight: '600' as const,
+  letterSpacing: -1,
+  color: theme.colors.textPrimary,
+  textAlign: 'center' as const,
+  fontFamily: Platform.select({
+    ios: 'SF Pro Rounded',
+    android: 'Poppins',
+    default: 'Poppins',
+  }),
+});
+
+const getUsernameStyle = (theme: ReturnType<typeof useTheme>) => ({
+  fontSize: 14,
+  fontWeight: '500' as const,
+  letterSpacing: 0,
+  color: theme.colors.textSecondary,
+  textAlign: 'center' as const,
+  marginTop: 8,
+  fontFamily: Platform.select({
+    ios: 'SF Pro Rounded',
+    android: 'Poppins',
+    default: 'Poppins',
+  }),
+});
+
+const getButtonContainerStyle = (theme: ReturnType<typeof useTheme>) => ({
+  marginTop: theme.spacing.xl * 1.5,
+  width: '100%',
+  maxWidth: 320,
+  alignItems: 'center' as const,
+  justifyContent: 'center' as const,
+  alignSelf: 'center' as const,
+});
+
+const getBottomSectionStyle = (theme: ReturnType<typeof useTheme>, insets: { bottom: number }) => ({
+  padding: theme.spacing.lg,
+  paddingBottom: insets.bottom + theme.spacing.md,
+  zIndex: 1,
+});
+
+const getBottomNavStyle = (theme: ReturnType<typeof useTheme>) => ({
+  flexDirection: 'row' as const,
+  justifyContent: 'space-around' as const,
+  marginBottom: theme.spacing.md,
+});
+
+const getNavItemStyle = (theme: ReturnType<typeof useTheme>) => ({
+  position: 'relative' as const,
+  alignItems: 'center' as const,
+  paddingVertical: theme.spacing.sm + 5,
+  paddingHorizontal: theme.spacing.sm,
+});
+
+const getNavTextStyle = (theme: ReturnType<typeof useTheme>, isActive: boolean) => ({
+  fontSize: 16,
+  fontWeight: '600' as const,
+  letterSpacing: -0.3,
+  color: isActive ? theme.colors.primary : theme.colors.textSecondary,
+  fontFamily: Platform.select({
+    ios: 'SF Pro Rounded',
+    android: 'Poppins',
+    default: undefined,
+  }),
+});
+
+const getActiveIndicatorStyle = (theme: ReturnType<typeof useTheme>) => ({
+  position: 'absolute' as const,
+  bottom: 0,
+  width: 32,
+  height: 4,
+  borderRadius: 2,
+  backgroundColor: theme.colors.primary,
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -162,75 +278,20 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: spacing.lg,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     zIndex: 1,
   },
-  title: {
-    fontSize: typography.title.fontSize,
-    fontWeight: typography.title.fontWeight,
-    letterSpacing: typography.title.letterSpacing,
-    color: typography.title.color,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: typography.subtitle.fontSize,
-    color: typography.subtitle.color,
-    marginBottom: spacing.xl,
-    textAlign: 'center',
-  },
-  buttonContainer: {
-    width: '100%',
-    maxWidth: 300,
-    marginBottom: spacing.xl,
-  },
-  buttonSpacing: {
-    height: spacing.md,
-  },
-  statsContainer: {
-    width: '100%',
-    maxWidth: 300,
-  },
-  bottomSection: {
-    padding: spacing.lg,
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: spacing.md,
-  },
-  navItem: {
-    paddingVertical: spacing.sm + 5,
-    paddingHorizontal: spacing.sm,
-    position: 'relative',
+  characterContainer: {
     alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    position: 'relative',
   },
-  navText: {
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: -0.3,
-    fontFamily: Platform.select({
-      ios: 'SF Pro Rounded',
-      android: 'Poppins',
-      default: undefined,
-    }),
-  },
-  navTextActive: {
-    color: '#7A57FD',
-  },
-  navTextInactive: {
-    color: '#6E6E8F',
-  },
-  activeIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    width: 32,
-    height: 4,
-    backgroundColor: '#7A57FD',
-    borderRadius: 2,
+  titleContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 0,
   },
 });
 

@@ -5,16 +5,15 @@ import { useSimpleNavigation } from '../navigation/SimpleNavigator';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Card } from '../components/Card';
 import { AnimatedBackground } from '../components/AnimatedBackground';
-import { colors, typography, spacing } from '../theme';
+import { useTheme } from '../hooks/useTheme';
 import { useUserStore } from '../state/userStore';
 import { soundManager } from '../audio/SoundManager';
-import { loadSoundPack, getAvailableSoundPacks, isValidSoundPack } from '../audio/loadSoundPack';
-import type { SoundPackName } from '../audio/SoundManager';
 
 export const SettingsScreen: React.FC = () => {
   const { goBack, navigate } = useSimpleNavigation();
   const insets = useSafeAreaInsets();
-  const { settings, updateSettings, resetProgress, selectedSoundPack, updateSelectedSoundPack } = useUserStore();
+  const { settings, updateSettings, resetProgress, username } = useUserStore();
+  const theme = useTheme();
   
   // Ensure settings is always defined
   const safeSettings = settings || {
@@ -36,16 +35,10 @@ export const SettingsScreen: React.FC = () => {
     updateSettings({ hintsEnabled: value });
   };
 
-  const handleSoundPackChange = async (packName: string) => {
-    if (isValidSoundPack(packName)) {
-      await updateSelectedSoundPack(packName);
-    }
-  };
-
   const handleResetProgress = () => {
     Alert.alert(
       'Reset Progress',
-      'Are you sure you want to reset all progress? This cannot be undone.',
+      'This will reset all local progress AND remove your scores from the global leaderboard. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -64,106 +57,89 @@ export const SettingsScreen: React.FC = () => {
     <AnimatedBackground>
       <ScrollView 
         style={styles.container} 
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.lg }]}
+        contentContainerStyle={[styles.content, { 
+          paddingHorizontal: theme.spacing.lg,
+          paddingTop: theme.spacing.md,
+          paddingBottom: insets.bottom + theme.spacing.lg,
+        }]}
       >
-        <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
-        <TouchableOpacity onPress={goBack} disabled={false} style={styles.backButton}>
-          <Text style={styles.backButtonIcon}>←</Text>
+        <View style={[styles.header, { 
+          paddingTop: insets.top + theme.spacing.md,
+          marginBottom: theme.spacing.xl,
+        }]}>
+        <TouchableOpacity onPress={goBack} disabled={false} style={[styles.backButton, { backgroundColor: `${theme.colors.primary}1A` }]}>
+          <Text style={[styles.backButtonIcon, { color: theme.colors.primary }]}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={[styles.title, { 
+          fontSize: theme.typography.title.fontSize,
+          fontWeight: theme.typography.title.fontWeight,
+          letterSpacing: theme.typography.title.letterSpacing,
+          color: theme.colors.textPrimary,
+        }]}>Settings</Text>
       </View>
 
-      <Card style={styles.settingsCard}>
-        <View style={styles.settingRow}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Sound</Text>
-            <Text style={styles.settingDescription}>Enable game sounds</Text>
+      <Card style={[getSettingsCardStyle(theme), { marginBottom: theme.spacing.xl }]}>
+        <Text style={getSectionTitleStyle(theme)}>Profile</Text>
+        <View style={getSettingRowStyle(theme)}>
+          <View style={getSettingInfoStyle(theme)}>
+            <Text style={getSettingLabelStyle(theme)}>Username</Text>
+            <Text style={[getSettingDescriptionStyle(theme), { 
+              color: username ? theme.colors.primary : theme.colors.textSecondary,
+              fontWeight: username ? '600' : '400',
+            }]}>
+              {username || 'Not set'}
+            </Text>
+          </View>
+        </View>
+      </Card>
+
+      <Card style={[getSettingsCardStyle(theme), { marginBottom: theme.spacing.xl }]}>
+        <Text style={getSectionTitleStyle(theme)}>Game Settings</Text>
+        <View style={getSettingRowStyle(theme)}>
+          <View style={getSettingInfoStyle(theme)}>
+            <Text style={getSettingLabelStyle(theme)}>Sound</Text>
+            <Text style={getSettingDescriptionStyle(theme)}>Enable game sounds</Text>
           </View>
           <Switch
             value={safeSettings.soundEnabled}
             onValueChange={handleSoundToggle}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={colors.surface}
+            trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+            thumbColor={theme.colors.surface}
           />
         </View>
 
-        <View style={styles.divider} />
+        <View style={getDividerStyle(theme)} />
 
-        <View style={styles.settingRow}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Haptics</Text>
-            <Text style={styles.settingDescription}>Vibration feedback</Text>
+        <View style={getSettingRowStyle(theme)}>
+          <View style={getSettingInfoStyle(theme)}>
+            <Text style={getSettingLabelStyle(theme)}>Haptics</Text>
+            <Text style={getSettingDescriptionStyle(theme)}>Vibration feedback</Text>
           </View>
           <Switch
             value={safeSettings.hapticsEnabled}
             onValueChange={handleHapticsToggle}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={colors.surface}
+            trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+            thumbColor={theme.colors.surface}
           />
         </View>
 
-        <View style={styles.divider} />
+        <View style={getDividerStyle(theme)} />
 
-        <View style={styles.settingRow}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Hints</Text>
-            <Text style={styles.settingDescription}>Show gameplay hints</Text>
+        <View style={getSettingRowStyle(theme)}>
+          <View style={getSettingInfoStyle(theme)}>
+            <Text style={getSettingLabelStyle(theme)}>Hints</Text>
+            <Text style={getSettingDescriptionStyle(theme)}>Show gameplay hints</Text>
           </View>
           <Switch
             value={safeSettings.hintsEnabled}
             onValueChange={handleHintsToggle}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={colors.surface}
+            trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
+            thumbColor={theme.colors.surface}
           />
         </View>
       </Card>
 
-      <Card style={styles.settingsCard}>
-        <Text style={styles.sectionTitle}>Sound Pack</Text>
-        {getAvailableSoundPacks()
-          .filter((packName) => packName !== 'anime') // Hide anime pack from selection
-          .map((packName, index, filteredArray) => (
-            <View key={packName}>
-              <TouchableOpacity
-                style={styles.soundPackRow}
-                onPress={() => handleSoundPackChange(packName)}
-                disabled={selectedSoundPack === packName}
-              >
-                <View style={styles.settingInfo}>
-                  <Text style={styles.settingLabel}>
-                    {packName.charAt(0).toUpperCase() + packName.slice(1)} Pack
-                  </Text>
-                  <Text style={styles.settingDescription}>
-                    {packName === 'pastel' && 'Soft pastel sound effects'}
-                    {packName === 'bubble' && 'Playful bubble sound effects'}
-                  </Text>
-                </View>
-                {selectedSoundPack === packName && (
-                  <Text style={styles.selectedLabel}>✓</Text>
-                )}
-              </TouchableOpacity>
-              {index < filteredArray.length - 1 && (
-                <View style={styles.divider} />
-              )}
-            </View>
-          ))}
-      </Card>
-
-      <Card style={styles.settingsCard}>
-        <Text style={styles.sectionTitle}>Mascot</Text>
-        <TouchableOpacity
-          style={styles.soundPackRow}
-          onPress={() => navigate('MascotSelector')}
-        >
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Choose Mascot</Text>
-            <Text style={styles.settingDescription}>Select your favorite mascot</Text>
-          </View>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
-      </Card>
-
-      <View style={styles.dangerSection}>
+      <View style={[styles.dangerSection, { marginTop: theme.spacing.lg }]}>
         <PrimaryButton
           title="Reset All Progress"
           onPress={handleResetProgress}
@@ -174,93 +150,103 @@ export const SettingsScreen: React.FC = () => {
   );
 };
 
+const getSettingsCardStyle = (theme: ReturnType<typeof useTheme>) => ({
+  backgroundColor: theme.colors.surface,
+  borderColor: theme.colors.border,
+  borderRadius: 20,
+  borderWidth: 1,
+  padding: 20,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.05,
+  shadowRadius: 8,
+  elevation: 3,
+});
+
+const getSettingRowStyle = (theme: ReturnType<typeof useTheme>) => ({
+  flexDirection: 'row' as const,
+  justifyContent: 'space-between' as const,
+  alignItems: 'center' as const,
+  paddingVertical: 12,
+});
+
+const getSettingInfoStyle = (theme: ReturnType<typeof useTheme>) => ({
+  flex: 1,
+  marginRight: 16,
+});
+
+const getSettingLabelStyle = (theme: ReturnType<typeof useTheme>) => ({
+  fontSize: theme.typography.body.fontSize,
+  fontWeight: '600' as const,
+  color: theme.colors.textPrimary,
+  marginBottom: 4,
+});
+
+const getSettingDescriptionStyle = (theme: ReturnType<typeof useTheme>) => ({
+  fontSize: theme.typography.caption.fontSize,
+  color: theme.colors.textSecondary,
+});
+
+const getDividerStyle = (theme: ReturnType<typeof useTheme>) => ({
+  height: 1,
+  backgroundColor: theme.colors.border,
+  marginVertical: 8,
+});
+
+const getSectionTitleStyle = (theme: ReturnType<typeof useTheme>) => ({
+  fontSize: theme.typography.body.fontSize,
+  fontWeight: '700' as const,
+  color: theme.colors.textPrimary,
+  marginBottom: 16,
+  letterSpacing: -0.3,
+});
+
+const getSoundPackRowStyle = (theme: ReturnType<typeof useTheme>) => ({
+  flexDirection: 'row' as const,
+  justifyContent: 'space-between' as const,
+  alignItems: 'center' as const,
+  paddingVertical: 12,
+});
+
+const getSelectedLabelStyle = (theme: ReturnType<typeof useTheme>) => ({
+  fontSize: theme.typography.body.fontSize,
+  fontWeight: '600' as const,
+  color: theme.colors.primary,
+});
+
+const getChevronStyle = (theme: ReturnType<typeof useTheme>) => ({
+  fontSize: 24,
+  fontWeight: '300' as const,
+  color: theme.colors.primary,
+});
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'transparent',
   },
-  content: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-  },
+  content: {},
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: 0,
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(108, 99, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md,
+    marginRight: 0,
   },
   backButtonIcon: {
     fontSize: 24,
-    color: colors.primary,
     fontWeight: '600',
   },
   title: {
-    fontSize: typography.title.fontSize,
-    fontWeight: typography.title.fontWeight,
-    letterSpacing: typography.title.letterSpacing,
-    color: typography.title.color,
     flex: 1,
+    marginLeft: 0,
   },
-  settingsCard: {
-    marginBottom: spacing.xl,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-  },
-  settingInfo: {
-    flex: 1,
-    marginRight: spacing.md,
-  },
-  settingLabel: {
-    fontSize: typography.body.fontSize,
-    fontWeight: '600',
-    color: typography.body.color,
-    marginBottom: spacing.xs,
-  },
-  settingDescription: {
-    fontSize: typography.caption.fontSize,
-    color: typography.caption.color,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: typography.body.fontSize,
-    fontWeight: '600',
-    color: typography.body.color,
-    marginBottom: spacing.md,
-  },
-  soundPackRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-  },
-  selectedLabel: {
-    fontSize: typography.body.fontSize,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  chevron: {
-    fontSize: 24,
-    color: colors.primary,
-    fontWeight: '300',
-  },
-  dangerSection: {
-    marginTop: spacing.lg,
-  },
+  dangerSection: {},
 });
 

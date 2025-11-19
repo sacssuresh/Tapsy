@@ -19,15 +19,14 @@ export interface GameState {
 }
 
 export interface PersistedData {
+  username: string | null;
   bestScoreByMode: Record<GameMode, number>;
   totalGamesPlayed: number;
   totalPerfectGames: number;
-  xp: number;
   currentStreakDays: number;
   lastPlayedDate: string | null;
   ownedThemes: string[];
   ownedSoundPacks: string[];
-  selectedSoundPack: string; // 'pastel' | 'bubble' | 'anime'
   hasPremium: boolean;
   settings: {
     soundEnabled: boolean;

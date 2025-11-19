@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { TileButton } from './TileButton';
-import { tileColors, spacing } from '../theme';
+import { spacing } from '../theme';
 import type { TileIndex } from '../types';
 
 interface GameGridProps {
@@ -11,6 +11,7 @@ interface GameGridProps {
   playSound?: (tileIndex: TileIndex) => void;
   onTilePressWithPosition?: (tileIndex: TileIndex, x: number, y: number) => void;
   hintTileIndex?: number | null; // Tile to show hint on
+  tileColors: readonly [string, string, string, string];
 }
 
 export const GameGrid: React.FC<GameGridProps> = ({
@@ -20,6 +21,7 @@ export const GameGrid: React.FC<GameGridProps> = ({
   playSound,
   onTilePressWithPosition,
   hintTileIndex = null,
+  tileColors,
 }) => {
   const renderTile = (index: TileIndex) => {
     return (

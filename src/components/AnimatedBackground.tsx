@@ -1,12 +1,15 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View, AppState } from 'react-native';
+import { Animated, StyleSheet, View, AppState, useColorScheme } from 'react-native';
 
 /**
  * Subtle animated gradient background
- * Colors: #EFEAFE → #F7F7FF → #EAF4FF
+ * Light mode: #EFEAFE → #F7F7FF → #EAF4FF
+ * Dark mode: Darker gradients with neon accents
  * Slow 12-15s animation with 40% opacity
  */
 export const AnimatedBackground: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const animatedValue = useRef(new Animated.Value(0)).current;
   const loopRef = useRef<Animated.CompositeAnimation | null>(null);
   const isActiveRef = useRef<boolean>(true);
@@ -71,13 +74,27 @@ export const AnimatedBackground: React.FC<{ children?: React.ReactNode }> = ({ c
     outputRange: [0.2, 0.2, 0.4],
   });
 
+  // Light mode colors
+  const lightColor1 = '#EFEAFE';
+  const lightColor2 = '#F7F7FF';
+  const lightColor3 = '#EAF4FF';
+
+  // Dark mode colors - darker gradients with subtle neon accents
+  const darkColor1 = '#0E0E10';
+  const darkColor2 = '#151518';
+  const darkColor3 = '#1A1A1D';
+
+  const color1 = isDark ? darkColor1 : lightColor1;
+  const color2 = isDark ? darkColor2 : lightColor2;
+  const color3 = isDark ? darkColor3 : lightColor3;
+
   return (
     <View style={StyleSheet.absoluteFill}>
       <Animated.View
         style={[
           StyleSheet.absoluteFill,
           {
-            backgroundColor: '#EFEAFE',
+            backgroundColor: color1,
             opacity: opacity1,
           },
         ]}
@@ -87,7 +104,7 @@ export const AnimatedBackground: React.FC<{ children?: React.ReactNode }> = ({ c
         style={[
           StyleSheet.absoluteFill,
           {
-            backgroundColor: '#F7F7FF',
+            backgroundColor: color2,
             opacity: opacity2,
           },
         ]}
@@ -97,7 +114,7 @@ export const AnimatedBackground: React.FC<{ children?: React.ReactNode }> = ({ c
         style={[
           StyleSheet.absoluteFill,
           {
-            backgroundColor: '#EAF4FF',
+            backgroundColor: color3,
             opacity: opacity3,
           },
         ]}

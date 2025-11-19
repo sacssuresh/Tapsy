@@ -7,17 +7,17 @@ interface UserStore extends PersistedData {
   isLoaded: boolean;
   loadFromStorage: () => Promise<void>;
   saveToStorage: () => Promise<void>;
+  updateUsername: (username: string) => Promise<void>;
   updateBestScore: (mode: GameMode, score: number) => void;
-  updateXP: (amount: number) => void;
   updateStreak: () => void;
   incrementGamesPlayed: () => void;
   incrementPerfectGames: () => void;
   updateSettings: (settings: Partial<PersistedData['settings']>) => void;
-  updateSelectedSoundPack: (packName: string) => Promise<void>;
   resetProgress: () => Promise<void>;
 }
 
 const defaultData: PersistedData = {
+  username: null,
   bestScoreByMode: {
     classic: 0,
     speed: 0,
@@ -26,12 +26,10 @@ const defaultData: PersistedData = {
   },
   totalGamesPlayed: 0,
   totalPerfectGames: 0,
-  xp: 0,
   currentStreakDays: 0,
   lastPlayedDate: null,
   ownedThemes: [],
   ownedSoundPacks: [],
-  selectedSoundPack: 'bubble',
   hasPremium: false,
   settings: {
     soundEnabled: true,
@@ -41,6 +39,7 @@ const defaultData: PersistedData = {
 };
 
 export const useUserStore = create<UserStore>((set, get) => ({
+  username: null,
   bestScoreByMode: {
     classic: 0,
     speed: 0,
@@ -49,12 +48,10 @@ export const useUserStore = create<UserStore>((set, get) => ({
   },
   totalGamesPlayed: 0,
   totalPerfectGames: 0,
-  xp: 0,
   currentStreakDays: 0,
   lastPlayedDate: null,
   ownedThemes: [],
   ownedSoundPacks: [],
-  selectedSoundPack: 'bubble',
   hasPremium: false,
   settings: {
     soundEnabled: true,
@@ -69,15 +66,14 @@ export const useUserStore = create<UserStore>((set, get) => ({
       // Ensure settings is always defined, merge with defaults if missing
       // Also ensure all boolean values are actually booleans (not strings from JSON)
       const mergedData = {
+        username: data.username || null,
         bestScoreByMode: data.bestScoreByMode || defaultData.bestScoreByMode,
         totalGamesPlayed: Number(data.totalGamesPlayed) || 0,
         totalPerfectGames: Number(data.totalPerfectGames) || 0,
-        xp: Number(data.xp) || 0,
         currentStreakDays: Number(data.currentStreakDays) || 0,
         lastPlayedDate: data.lastPlayedDate || null,
         ownedThemes: Array.isArray(data.ownedThemes) ? data.ownedThemes : [],
         ownedSoundPacks: Array.isArray(data.ownedSoundPacks) ? data.ownedSoundPacks : [],
-        selectedSoundPack: data.selectedSoundPack || 'bubble',
         hasPremium: Boolean(data.hasPremium === true || data.hasPremium === 'true'),
         settings: {
           soundEnabled: data.settings?.soundEnabled !== undefined 
@@ -113,19 +109,23 @@ export const useUserStore = create<UserStore>((set, get) => ({
     const state = get();
     // Extract only the data that should be persisted (exclude methods and isLoaded flag)
     const data: PersistedData = {
+      username: state.username,
       bestScoreByMode: state.bestScoreByMode,
       totalGamesPlayed: state.totalGamesPlayed,
       totalPerfectGames: state.totalPerfectGames,
-      xp: state.xp,
       currentStreakDays: state.currentStreakDays,
       lastPlayedDate: state.lastPlayedDate,
       ownedThemes: state.ownedThemes,
       ownedSoundPacks: state.ownedSoundPacks,
-      selectedSoundPack: state.selectedSoundPack,
       hasPremium: state.hasPremium,
       settings: state.settings,
     };
     await savePersistedData(data);
+  },
+
+  updateUsername: async (username: string) => {
+    set({ username: username.trim() || null });
+    await get().saveToStorage();
   },
 
   updateBestScore: (mode: GameMode, score: number) => {
@@ -140,11 +140,6 @@ export const useUserStore = create<UserStore>((set, get) => ({
       // Save immediately after update
       setTimeout(() => get().saveToStorage(), 0);
     }
-  },
-
-  updateXP: (amount: number) => {
-    set((state) => ({ xp: state.xp + amount }));
-    get().saveToStorage();
   },
 
   updateStreak: () => {
@@ -197,27 +192,24 @@ export const useUserStore = create<UserStore>((set, get) => ({
     }
   },
 
-  updateSelectedSoundPack: async (packName: string) => {
-    set({ selectedSoundPack: packName });
-    await get().saveToStorage();
-    
-    // Load the new sound pack
-    const { loadSoundPack, isValidSoundPack } = await import('../audio/loadSoundPack');
-    if (isValidSoundPack(packName)) {
-      await loadSoundPack(packName as any);
-      
-      // Ensure sound manager is enabled if sound is enabled in settings
-      const state = get();
-      if (state.settings?.soundEnabled) {
-        const { soundManager } = await import('../audio/SoundManager');
-        soundManager.setEnabled(true);
-      }
-    }
-  },
-
   resetProgress: async () => {
+    const state = get();
+    const username = state.username;
+    
+    // Reset local data
     set({ ...defaultData });
     await get().saveToStorage();
+    
+    // Delete Firebase leaderboard entry if username exists
+    if (username && username.trim()) {
+      try {
+        const { deleteUserLeaderboard } = await import('../services/leaderboardService');
+        await deleteUserLeaderboard(username);
+      } catch (error) {
+        console.warn('Error deleting user leaderboard:', error);
+        // Fail silently - local reset already completed
+      }
+    }
   },
 }));
 

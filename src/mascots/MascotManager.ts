@@ -3,25 +3,22 @@ import type { ImageSourcePropType } from 'react-native';
 import type { GameMode } from '../types';
 import { error as logError } from '../utils/logger';
 
-export type MascotName = 'tapsy-kid' | 'tapsy-girl' | 'puffy' | 'chicky' | 'starry' | 'sprout' | 'bubbly';
+export type MascotName = 'tapsy-kid' | 'tapsy-girl' | 'starry' | 'sprout';
 
 const STORAGE_KEY = 'selectedMascot';
 
-// Image cache using require() for all mascot PNGs
+// Image cache using require() for all mascot WebPs
 const mascotCache: Record<MascotName, ImageSourcePropType> = {
-  'tapsy-kid': require('../../assets/mascots/tapsy-kid.png'),
-  'tapsy-girl': require('../../assets/mascots/tapsy-girl.png'),
-  'puffy': require('../../assets/mascots/puffy.png'),
-  'chicky': require('../../assets/mascots/chicky.png'),
-  'starry': require('../../assets/mascots/starry.png'),
-  'sprout': require('../../assets/mascots/sprout.png'),
-  'bubbly': require('../../assets/mascots/bubbly.png'),
+  'tapsy-kid': require('../../assets/mascots/tapsy-kid.webp'),
+  'tapsy-girl': require('../../assets/mascots/tapsy-girl.webp'),
+  'starry': require('../../assets/mascots/starry.webp'),
+  'sprout': require('../../assets/mascots/sprout.webp'),
 };
 
 // Mode to mascot mapping
 const modeToMascot: Record<GameMode, MascotName> = {
-  classic: 'puffy',
-  speed: 'chicky',
+  classic: 'tapsy-kid',
+  speed: 'tapsy-girl',
   reverse: 'starry',
   zen: 'sprout',
 };
@@ -51,12 +48,19 @@ export function getMascotNameForMode(mode: GameMode): MascotName {
 /**
  * Get user's selected mascot from AsyncStorage
  * Falls back to 'tapsy-kid' if not set
+ * Migrates invalid mascots (puffy, chicky, bubbly) to 'tapsy-kid'
  */
 export async function getUserMascot(): Promise<MascotName> {
   try {
     const stored = await AsyncStorage.getItem(STORAGE_KEY);
-    if (stored && isValidMascotName(stored)) {
-      return stored as MascotName;
+    if (stored) {
+      if (isValidMascotName(stored)) {
+        return stored as MascotName;
+      } else {
+        // Migrate invalid mascot (puffy, chicky, bubbly) to tapsy-kid
+        await setUserMascot('tapsy-kid');
+        return 'tapsy-kid';
+      }
     }
     return 'tapsy-kid';
   } catch (err) {
@@ -98,16 +102,6 @@ export const mascotsList: Array<{ name: MascotName; displayName: string; descrip
     description: 'The friendly mascot companion',
   },
   {
-    name: 'puffy',
-    displayName: 'Puffy',
-    description: 'Soft and cuddly companion',
-  },
-  {
-    name: 'chicky',
-    displayName: 'Chicky',
-    description: 'Energetic and fast',
-  },
-  {
     name: 'starry',
     displayName: 'Starry',
     description: 'Magical and mysterious',
@@ -117,10 +111,19 @@ export const mascotsList: Array<{ name: MascotName; displayName: string; descrip
     displayName: 'Sprout',
     description: 'Calm and peaceful',
   },
-  {
-    name: 'bubbly',
-    displayName: 'Bubbly',
-    description: 'Cheerful and playful',
-  },
 ];
+
+/**
+ * Ordered list of mascots for cycling on Home screen
+ */
+export const availableMascots: MascotName[] = ['tapsy-kid', 'tapsy-girl', 'sprout', 'starry'];
+
+/**
+ * Get next mascot in the cycle
+ */
+export function getNextMascot(currentMascot: MascotName): MascotName {
+  const currentIndex = availableMascots.indexOf(currentMascot);
+  const nextIndex = (currentIndex + 1) % availableMascots.length;
+  return availableMascots[nextIndex];
+}
 
