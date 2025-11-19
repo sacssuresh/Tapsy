@@ -45,6 +45,14 @@ Desktop.ini
 # local env files
 .env*.local
 .env
+.env.*
+
+# Credentials and secrets
+credentials.json
+creds.json
+**/credentials/**
+*.jks
+*.keystore
 
 # typescript
 *.tsbuildinfo
