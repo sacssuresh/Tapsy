@@ -30,11 +30,6 @@ export const HomeScreen: React.FC = () => {
         
         if (!isMounted) return;
         
-        // Show username modal if username is null/empty (first launch)
-        if (!userStore.username || userStore.username.trim() === '') {
-          setShowUsernameModal(true);
-        }
-        
         // Load user's selected mascot
         const userMascot = await getUserMascot();
         if (isMounted) {
@@ -69,6 +64,16 @@ export const HomeScreen: React.FC = () => {
       isMounted = false;
     };
   }, [loadFromStorage]);
+
+  // Watch for username changes (e.g., after reset or initial load)
+  // This ensures modal shows/hides correctly based on username state
+  useEffect(() => {
+    if (!username || username.trim() === '') {
+      setShowUsernameModal(true);
+    } else {
+      setShowUsernameModal(false);
+    }
+  }, [username]);
 
   const navigateToGame = (mode: GameMode) => {
     navigate('Game', { mode });
