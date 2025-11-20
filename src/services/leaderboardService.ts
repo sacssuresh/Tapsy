@@ -15,6 +15,39 @@ export interface LeaderboardEntry {
 }
 
 /**
+ * Normalize username to lowercase for consistent storage
+ */
+function normalizeUsername(username: string): string {
+  return username.trim().toLowerCase();
+}
+
+/**
+ * Check if username is available (not taken)
+ * Returns true if username is available or if Firebase is not configured (allows local-only use)
+ */
+export async function checkUsernameAvailability(username: string): Promise<boolean> {
+  if (!username || !username.trim()) {
+    return false;
+  }
+
+  if (!db || !isConfigured) {
+    // If Firebase is not configured, allow username (local-only use)
+    return true;
+  }
+
+  try {
+    const normalizedUsername = normalizeUsername(username);
+    const userDocRef = doc(db, 'leaderboard', normalizedUsername);
+    const userDoc = await getDoc(userDocRef);
+    return !userDoc.exists(); // Return true if username is available (doesn't exist)
+  } catch (error) {
+    console.warn('Error checking username availability:', error);
+    // On error, allow username (don't block user)
+    return true;
+  }
+}
+
+/**
  * Submit a score to the leaderboard
  * Updates only if new score is higher than existing score for that mode
  * Recalculates combined score
@@ -32,8 +65,8 @@ export async function submitScore(
   }
 
   try {
-    const usernameTrimmed = username.trim();
-    const userDocRef = doc(db, 'leaderboard', usernameTrimmed);
+    const normalizedUsername = normalizeUsername(username);
+    const userDocRef = doc(db, 'leaderboard', normalizedUsername);
     const userDoc = await getDoc(userDocRef);
 
     if (userDoc.exists()) {
@@ -52,7 +85,7 @@ export async function submitScore(
         const combined = updatedScores.classic + updatedScores.reverse + updatedScores.hard;
 
         await setDoc(userDocRef, {
-          name: usernameTrimmed,
+          name: normalizedUsername,
           scores: updatedScores,
           combined,
           updatedAt: serverTimestamp(),
@@ -68,7 +101,7 @@ export async function submitScore(
       const combined = scores.classic + scores.reverse + scores.hard;
 
       await setDoc(userDocRef, {
-        name: usernameTrimmed,
+        name: normalizedUsername,
         scores,
         combined,
         updatedAt: serverTimestamp(),
@@ -138,7 +171,8 @@ export async function deleteUserLeaderboard(username: string): Promise<void> {
   }
 
   try {
-    const userDocRef = doc(db, 'leaderboard', username.trim());
+    const normalizedUsername = normalizeUsername(username);
+    const userDocRef = doc(db, 'leaderboard', normalizedUsername);
     await deleteDoc(userDocRef);
   } catch (error) {
     console.warn('Error deleting user leaderboard:', error);

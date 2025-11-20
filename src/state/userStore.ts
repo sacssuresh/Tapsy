@@ -124,7 +124,8 @@ export const useUserStore = create<UserStore>((set, get) => ({
   },
 
   updateUsername: async (username: string) => {
-    set({ username: username.trim() || null });
+    // Normalize username to lowercase for consistency
+    set({ username: username.trim().toLowerCase() || null });
     await get().saveToStorage();
   },
 

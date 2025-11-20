@@ -41,7 +41,7 @@ export const LeaderboardRow: React.FC<LeaderboardRowProps> = ({
             },
           ]}
         >
-          {rank <= 3 ? (rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉') : `#${rank}`}
+          {rank <= 3 ? (rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉') : rank}
         </Text>
       </View>
 

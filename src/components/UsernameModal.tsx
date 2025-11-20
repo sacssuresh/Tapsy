@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Text, TextInput, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { Modal, View, Text, TextInput, StyleSheet, TouchableOpacity, Platform, ActivityIndicator } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { Card } from './Card';
 import { PrimaryButton } from './PrimaryButton';
+import { checkUsernameAvailability } from '../services/leaderboardService';
 
 interface UsernameModalProps {
   visible: boolean;
@@ -16,17 +17,37 @@ interface UsernameModalProps {
 export const UsernameModal: React.FC<UsernameModalProps> = ({ visible, onSubmit }) => {
   const theme = useTheme();
   const [username, setUsername] = useState('');
+  const [error, setError] = useState('');
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     if (visible) {
       setUsername('');
+      setError('');
+      setChecking(false);
     }
   }, [visible]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const trimmed = username.trim();
-    if (trimmed) {
-      onSubmit(trimmed);
+    if (!trimmed) {
+      return;
+    }
+
+    setChecking(true);
+    setError('');
+
+    try {
+      const isAvailable = await checkUsernameAvailability(trimmed);
+      if (isAvailable) {
+        onSubmit(trimmed.toLowerCase());
+      } else {
+        setError('Username already taken. Please choose another.');
+      }
+    } catch (err) {
+      setError('Error checking username. Please try again.');
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -54,12 +75,15 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({ visible, onSubmit 
               styles.input,
               {
                 backgroundColor: theme.colors.backgroundSecondary,
-                borderColor: theme.colors.border,
+                borderColor: error ? theme.colors.error || '#FF3B30' : theme.colors.border,
                 color: theme.colors.textPrimary,
               },
             ]}
             value={username}
-            onChangeText={setUsername}
+            onChangeText={(text) => {
+              setUsername(text);
+              if (error) setError('');
+            }}
             placeholder="Username"
             placeholderTextColor={theme.colors.textSecondary}
             autoFocus
@@ -67,12 +91,19 @@ export const UsernameModal: React.FC<UsernameModalProps> = ({ visible, onSubmit 
             returnKeyType="done"
             onSubmitEditing={handleSubmit}
             selectionColor={theme.colors.primary}
+            editable={!checking}
           />
 
+          {error ? (
+            <Text style={[styles.errorText, { color: theme.colors.error || '#FF3B30' }]}>
+              {error}
+            </Text>
+          ) : null}
+
           <PrimaryButton
-            title="Start Playing"
+            title={checking ? 'Checking...' : 'Start Playing'}
             onPress={handleSubmit}
-            disabled={!username.trim()}
+            disabled={!username.trim() || checking}
           />
         </Card>
       </TouchableOpacity>
@@ -122,7 +153,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 16,
     fontSize: 16,
-    marginBottom: 24,
+    marginBottom: 8,
+    fontFamily: Platform.select({
+      ios: 'SF Pro Rounded',
+      android: 'Poppins',
+      default: undefined,
+    }),
+  },
+  errorText: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
     fontFamily: Platform.select({
       ios: 'SF Pro Rounded',
       android: 'Poppins',
