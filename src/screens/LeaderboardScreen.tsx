@@ -8,7 +8,6 @@ import { LeaderboardRow } from '../components/LeaderboardRow';
 import { useTheme } from '../hooks/useTheme';
 import { useUserStore } from '../state/userStore';
 import { getRankings, type LeaderboardEntry } from '../services/leaderboardService';
-import { isConfigured } from '../services/firebase';
 
 export const LeaderboardScreen: React.FC = () => {
   const { goBack } = useSimpleNavigation();
@@ -18,15 +17,18 @@ export const LeaderboardScreen: React.FC = () => {
   const [rankings, setRankings] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const loadRankings = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const data = await getRankings(50);
       setRankings(data);
     } catch (error) {
       console.warn('Error loading leaderboard:', error);
       setRankings([]);
+      setLoadError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -73,16 +75,13 @@ export const LeaderboardScreen: React.FC = () => {
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      {!isConfigured ? (
+      {loadError ? (
         <>
-          <Text style={[styles.emptyText, { color: theme.colors.warning }]}>
-            Firebase Not Configured
+          <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
+            Could not load rankings
           </Text>
           <Text style={[styles.emptySubtext, { color: theme.colors.textSecondary }]}>
-            Please configure Firebase to enable leaderboard rankings.
-          </Text>
-          <Text style={[styles.emptySubtext, { color: theme.colors.textSecondary, marginTop: 8, fontSize: 12 }]}>
-            Set EXPO_PUBLIC_FIREBASE_* environment variables in your .env file or update firebase.ts
+            Pull down to try again.
           </Text>
         </>
       ) : (

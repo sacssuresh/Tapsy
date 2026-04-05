@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { TouchableOpacity, Text, StyleSheet, Animated, View } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, Animated, View, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { colors, typography, spacing } from '../theme';
 
@@ -74,6 +74,7 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
           {
             shadowOpacity: shadowOpacityAnim,
             shadowRadius: shadowRadiusAnim,
+            backgroundColor: 'transparent',
           },
         ]}
       >
@@ -82,13 +83,20 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
           style={[
             {
               transform: [{ scale: scaleAnim }],
+              backgroundColor: 'transparent',
             },
             !!disabled && styles.disabled,
           ]}
         >
-          <BlurView intensity={12} tint="light" style={styles.button}>
-            <Text style={styles.text}>{title}</Text>
-          </BlurView>
+          {Platform.OS === 'ios' ? (
+            <BlurView intensity={12} tint="light" style={styles.button}>
+              <Text style={styles.text}>{title}</Text>
+            </BlurView>
+          ) : (
+            <View style={styles.button}>
+              <Text style={styles.text}>{title}</Text>
+            </View>
+          )}
         </Animated.View>
       </Animated.View>
     </TouchableOpacity>
@@ -97,9 +105,9 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: 'rgba(255, 255, 255, 0.45)',
-    borderWidth: 1.2,
-    borderColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: Platform.OS === 'android' ? 'rgba(108, 99, 255, 0.12)' : 'rgba(255, 255, 255, 0.45)',
+    borderWidth: Platform.OS === 'android' ? 1.5 : 1.2,
+    borderColor: Platform.OS === 'android' ? 'rgba(108, 99, 255, 0.4)' : 'rgba(255, 255, 255, 0.7)',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
     borderRadius: 26,
@@ -107,8 +115,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-    overflow: 'hidden',
+    elevation: Platform.OS === 'android' ? 0 : 3,
+    overflow: Platform.OS === 'ios' ? 'hidden' : 'visible',
   },
   disabled: {
     opacity: 0.5,

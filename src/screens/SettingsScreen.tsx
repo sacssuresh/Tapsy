@@ -201,24 +201,6 @@ const getSectionTitleStyle = (theme: ReturnType<typeof useTheme>) => ({
   letterSpacing: -0.3,
 });
 
-const getSoundPackRowStyle = (theme: ReturnType<typeof useTheme>) => ({
-  flexDirection: 'row' as const,
-  justifyContent: 'space-between' as const,
-  alignItems: 'center' as const,
-  paddingVertical: 12,
-});
-
-const getSelectedLabelStyle = (theme: ReturnType<typeof useTheme>) => ({
-  fontSize: theme.typography.body.fontSize,
-  fontWeight: '600' as const,
-  color: theme.colors.primary,
-});
-
-const getChevronStyle = (theme: ReturnType<typeof useTheme>) => ({
-  fontSize: 24,
-  fontWeight: '300' as const,
-  color: theme.colors.primary,
-});
 
 const styles = StyleSheet.create({
   container: {

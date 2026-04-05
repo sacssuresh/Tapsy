@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSimpleNavigation } from '../navigation/SimpleNavigator';
@@ -10,10 +10,16 @@ import { Card } from '../components/Card';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import { Mascot } from '../components/Mascot';
 import { Confetti } from '../components/Confetti';
+import { ShareCard } from '../components/ShareCard';
 import { colors, typography, spacing } from '../theme';
 import { soundManager } from '../audio/SoundManager';
-import { submitScore, type LeaderboardMode } from '../services/leaderboardService';
+import { submitScore, getRankings, type LeaderboardMode } from '../services/leaderboardService';
+import { getMascotForMode } from '../mascots/MascotManager';
 import type { GameMode } from '../types';
+import type { ImageSourcePropType } from 'react-native';
+import ViewShot from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
+import * as Clipboard from 'expo-clipboard';
 
 export const GameOverScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> = ({ route }) => {
   const { navigate } = useSimpleNavigation();
@@ -39,6 +45,32 @@ export const GameOverScreen: React.FC<{ route?: { params?: { mode?: GameMode } }
   const bestScore = bestScoreByMode[mode];
   const isNewBest = score > bestScore;
   const [showConfetti, setShowConfetti] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [beatenCount, setBeatenCount] = useState<number | undefined>(undefined);
+  const shareCardRef = useRef<ViewShot>(null);
+  const mascotImage: ImageSourcePropType = getMascotForMode(mode);
+
+  const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.suresh.tapsy';
+
+  const handleShare = async () => {
+    if (!shareCardRef.current || sharing) return;
+    try {
+      setSharing(true);
+      const uri = await shareCardRef.current.capture!();
+      await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share your Tapsy score!' });
+    } catch {
+      // share cancelled or failed silently
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    await Clipboard.setStringAsync(PLAY_STORE_URL);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
 
   useEffect(() => {
     // Update stats
@@ -68,6 +100,13 @@ export const GameOverScreen: React.FC<{ route?: { params?: { mode?: GameMode } }
     if (safeSettings.soundEnabled) {
       soundManager.play('fail');
     }
+
+    // Fetch leaderboard to calculate how many players this score beats
+    const leaderboardMode: LeaderboardMode = mode === 'speed' ? 'hard' : mode === 'reverse' ? 'reverse' : 'classic';
+    getRankings(50).then((rankings) => {
+      const beaten = rankings.filter((entry) => entry.scores[leaderboardMode] < score).length;
+      if (beaten > 0) setBeatenCount(beaten);
+    }).catch(() => {});
   }, []);
 
   const handlePlayAgain = () => {
@@ -109,11 +148,51 @@ export const GameOverScreen: React.FC<{ route?: { params?: { mode?: GameMode } }
       </Card>
 
       <View style={styles.buttonContainer}>
-        <PrimaryButton title="Play Again" onPress={handlePlayAgain} />
+        {isNewBest ? (
+          <>
+            <PrimaryButton title={sharing ? 'Sharing...' : '📤 Share Your Score!'} onPress={handleShare} />
+            <View style={styles.buttonSpacing} />
+            <View style={styles.shareRow}>
+              <View style={styles.shareImageBtn}>
+                <SecondaryButton title="Play Again" onPress={handlePlayAgain} />
+              </View>
+              <View style={styles.copyLinkBtn}>
+                <SecondaryButton title={linkCopied ? '✅ Copied!' : '🔗 Copy Link'} onPress={handleCopyLink} />
+              </View>
+            </View>
+          </>
+        ) : (
+          <>
+            <PrimaryButton title="Play Again" onPress={handlePlayAgain} />
+            <View style={styles.buttonSpacing} />
+            <View style={styles.shareRow}>
+              <View style={styles.shareImageBtn}>
+                <SecondaryButton title={sharing ? 'Sharing...' : '📤 Share Score'} onPress={handleShare} />
+              </View>
+              <View style={styles.copyLinkBtn}>
+                <SecondaryButton title={linkCopied ? '✅ Copied!' : '🔗 Copy Link'} onPress={handleCopyLink} />
+              </View>
+            </View>
+          </>
+        )}
         <View style={styles.buttonSpacing} />
         <SecondaryButton title="Change Mode" onPress={handleChangeMode} />
         <View style={styles.buttonSpacing} />
         <SecondaryButton title="Home" onPress={handleGoHome} />
+      </View>
+
+      {/* Hidden card used for screenshot capture */}
+      <View style={styles.hiddenCapture}>
+        <ViewShot ref={shareCardRef} options={{ format: 'png', quality: 1 }}>
+          <ShareCard
+            score={score}
+            level={level}
+            mode={mode}
+            isNewBest={isNewBest}
+            mascotImage={mascotImage}
+            beatenCount={beatenCount}
+          />
+        </ViewShot>
       </View>
       </ScrollView>
     </AnimatedBackground>
@@ -173,6 +252,22 @@ const styles = StyleSheet.create({
   },
   buttonSpacing: {
     height: spacing.md,
+  },
+  shareRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  shareImageBtn: {
+    flex: 1,
+  },
+  copyLinkBtn: {
+    flex: 1,
+  },
+  hiddenCapture: {
+    position: 'absolute',
+    top: -2000,
+    left: 0,
+    opacity: 0,
   },
 });
 

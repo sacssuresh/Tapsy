@@ -343,10 +343,10 @@ export const GameScreen: React.FC<{ route?: { params?: { mode?: GameMode } } }> 
           />
         ))}
 
-        <View style={[styles.footer, { 
+        <View style={[styles.footer, {
           paddingHorizontal: theme.spacing.lg,
           paddingTop: theme.spacing.md,
-          paddingBottom: insets.bottom + theme.spacing.sm,
+          paddingBottom: insets.bottom + theme.spacing.lg,
         }]}>
           <SecondaryButton
             title={Boolean(isPaused) ? 'Resume' : 'Pause'}

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(npx expo:*)",
+      "Bash(ngrok version:*)",
+      "Read(//c/Users/BALASUS103/AppData/Local/ngrok/**)",
+      "Read(//c/Users/BALASUS103/.ngrok2/**)",
+      "Bash(npm install:*)"
+    ]
+  }
+}

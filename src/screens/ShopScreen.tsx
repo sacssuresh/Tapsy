@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSimpleNavigation } from '../navigation/SimpleNavigator';
 import { Card } from '../components/Card';
-import { PrimaryButton } from '../components/PrimaryButton';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import { colors, typography, spacing } from '../theme';
 import { useUserStore } from '../state/userStore';
@@ -11,27 +10,12 @@ import { useUserStore } from '../state/userStore';
 export const ShopScreen: React.FC = () => {
   const { goBack } = useSimpleNavigation();
   const insets = useSafeAreaInsets();
-  const { hasPremium, ownedThemes, ownedSoundPacks, updateSettings } = useUserStore();
-
-  const handlePurchaseTheme = (themeId: string) => {
-    // TODO: Integrate in-app purchase here
-    alert(`Purchase theme: ${themeId} (IAP integration needed)`);
-  };
-
-  const handlePurchaseSoundPack = (packId: string) => {
-    // TODO: Integrate in-app purchase here
-    alert(`Purchase sound pack: ${packId} (IAP integration needed)`);
-  };
-
-  const handleRemoveAds = () => {
-    // TODO: Integrate in-app purchase here
-    alert('Remove ads purchase (IAP integration needed)');
-  };
+  const { hasPremium, ownedThemes } = useUserStore();
 
   return (
     <AnimatedBackground>
-      <ScrollView 
-        style={styles.container} 
+      <ScrollView
+        style={styles.container}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.lg }]}
       >
         <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
@@ -52,10 +36,7 @@ export const ShopScreen: React.FC = () => {
             {ownedThemes.includes('ocean') ? (
               <Text style={styles.ownedLabel}>Owned</Text>
             ) : (
-              <PrimaryButton
-                title="$0.99"
-                onPress={() => handlePurchaseTheme('ocean')}
-              />
+              <Text style={styles.comingSoonLabel}>Coming Soon</Text>
             )}
           </View>
         </Card>
@@ -69,16 +50,11 @@ export const ShopScreen: React.FC = () => {
             {ownedThemes.includes('sunset') ? (
               <Text style={styles.ownedLabel}>Owned</Text>
             ) : (
-              <PrimaryButton
-                title="$0.99"
-                onPress={() => handlePurchaseTheme('sunset')}
-              />
+              <Text style={styles.comingSoonLabel}>Coming Soon</Text>
             )}
           </View>
         </Card>
       </View>
-
-      {/* Sound Packs section removed - bubble is default, anime is premium locked */}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Premium</Text>
@@ -91,7 +67,7 @@ export const ShopScreen: React.FC = () => {
             {hasPremium ? (
               <Text style={styles.ownedLabel}>Owned</Text>
             ) : (
-              <PrimaryButton title="$2.99" onPress={handleRemoveAds} />
+              <Text style={styles.comingSoonLabel}>Coming Soon</Text>
             )}
           </View>
         </Card>
@@ -171,6 +147,11 @@ const styles = StyleSheet.create({
     fontSize: typography.caption.fontSize,
     color: colors.accentAqua,
     fontWeight: '600',
+  },
+  comingSoonLabel: {
+    fontSize: typography.caption.fontSize,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
 });
 

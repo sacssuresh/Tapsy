@@ -71,6 +71,7 @@ export const NeonButton: React.FC<NeonButtonProps> = ({
             transform: [{ scale: scaleAnim }],
             borderColor: neonColor,
             shadowColor: neonColor,
+            backgroundColor: 'transparent',
           },
         ]}
       >
@@ -141,7 +142,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
-    overflow: 'hidden',
+    overflow: Platform.OS === 'ios' ? 'hidden' : 'visible',
     elevation: 4,
   },
   glowOverlay: {
